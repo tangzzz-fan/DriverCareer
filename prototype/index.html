@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#0e1014">
+<title>科三路线通 · 苏州科技城 · 科目三路线顺序记忆训练</title>
+<meta name="description" content="苏州科技城科目三路线记忆训练：按线路练顺序，按车型练难点，含夜间灯光模拟。支持 C1 手动挡 / C2 自动挡。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{
+    --bg:#0e1014; --panel:#171b22; --panel-2:#1f242d;
+    --line:#272e3a; --text:#e9edf3; --dim:#98a3b3; --dim-2:#69737f;
+    --accent:#3ddc97; --accent-2:#4da3ff; --warn:#ffb454; --red:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:#08090c;color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+  .stagewrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .stagehint{font-size:12px;color:var(--dim-2);text-align:center;max-width:430px;line-height:1.7}
+  .stagehint b{color:var(--accent)}
+  .phone{width:390px;height:800px;background:var(--bg);border-radius:42px;border:1px solid #232a35;
+    box-shadow:0 40px 90px -20px rgba(0,0,0,.9),0 0 0 9px #14171d,0 0 0 10px #262d38;
+    position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130px;height:26px;background:#0b0d11;border-radius:0 0 18px 18px;z-index:60}
+  .statusbar{height:42px;flex:0 0 42px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 4px;font-size:11.5px;color:var(--dim-2);z-index:50}
+  .app{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+  .app::-webkit-scrollbar{display:none}
+  .screen{padding:0 20px 96px;animation:in .22s ease}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .nav{display:flex;align-items:center;gap:10px;padding:4px 0 14px;position:sticky;top:0;background:linear-gradient(180deg,var(--bg) 72%,transparent);z-index:40}
+  .back{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--dim);cursor:pointer}
+  .back:active{transform:scale(.94)}
+  .navtitle{font-size:14.5px;font-weight:600}
+  .navsub{font-size:11px;color:var(--dim-2);margin-top:1px}
+  .spacer{flex:1}
+  h1{font-size:21px;letter-spacing:-.01em}
+  .lead{font-size:12.5px;color:var(--dim-2);margin-top:5px}
+  .sechead{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);font-weight:700;margin:22px 0 10px}
+  .seg{display:flex;gap:4px;background:var(--panel-2);border-radius:11px;padding:4px;margin:14px 0 2px}
+  .segb{flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:var(--dim-2);
+    font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:.16s}
+  .segb.on{background:var(--panel);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+  .segcap{font-size:10.5px;color:var(--dim-2);text-align:center;margin-top:8px}
+  .row{display:flex;align-items:center;gap:12px;padding:15px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:last-child{border-bottom:none}
+  .row:active .rt{color:var(--accent)}
+  .rn{font-size:12px;font-weight:700;color:var(--dim-2);width:34px;flex:0 0 34px;letter-spacing:.02em}
+  .rt{font-size:14.5px;font-weight:500;flex:1;transition:.15s}
+  .rc{font-size:11px;color:var(--dim-2)}
+  .arw{color:var(--dim-2);font-size:15px}
+  .heroes{display:flex;gap:9px}
+  .hero{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer}
+  .hero:active{transform:scale(.98)}
+  .hero .ht{font-size:13.5px;font-weight:600;margin-top:10px}
+  .hero .hp{font-size:10.5px;color:var(--dim-2);margin-top:3px}
+  .hero .ico{font-size:17px;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .ico.b{background:rgba(77,163,255,.13)}
+  .ico.o{background:rgba(255,180,84,.13)}
+  .btn{display:block;width:100%;padding:14px;border-radius:13px;border:none;font-size:14.5px;font-weight:600;
+    background:var(--accent);color:#06120c;cursor:pointer;font-family:inherit}
+  .btn:active{transform:scale(.985)}
+  .btn:disabled{background:var(--panel-2);color:var(--dim-2)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btnrow{display:flex;gap:9px}
+  .btnrow .btn{flex:1}
+  .btm{position:sticky;bottom:0;padding:16px 0;background:linear-gradient(0deg,var(--bg) 62%,transparent)}
+  .prog{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .prog .bar{flex:1;height:3px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+  .prog .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+  .prog span{font-size:10.5px;color:var(--dim-2);letter-spacing:.06em}
+  .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);font-weight:700;margin-bottom:8px}
+  .pool{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:11.5px;padding:6px 10px;border-radius:9px;background:var(--panel);border:1px solid var(--line);cursor:pointer;user-select:none;transition:.14s;line-height:1.3}
+  .chip:active{transform:scale(.94)}
+  .poolstick{position:sticky;top:-1px;z-index:30;padding:6px 0 12px;
+    background:linear-gradient(180deg,var(--bg) 76%,rgba(14,16,20,.75) 92%,transparent)}
+  .navflat{position:static;background:none}
+  .applied{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+  .arow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:9px;background:var(--panel-2);font-size:12.5px;animation:in .18s ease}
+  .arow .n{width:19px;height:19px;flex:0 0 19px;border-radius:6px;background:rgba(255,255,255,.06);color:var(--dim);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+  .arow .x{margin-left:auto;color:var(--dim-2);font-size:13px}
+  .arow.ok{background:rgba(61,220,151,.09)}
+  .arow.ok .n{background:rgba(61,220,151,.18);color:var(--accent)}
+  .arow.bad{background:rgba(255,107,107,.08)}
+  .arow.bad .n{background:rgba(255,107,107,.18);color:var(--red)}
+  .arow .fix{font-size:10.5px;color:var(--warn);margin-left:auto;text-align:right;max-width:46%}
+  .empty{font-size:11.5px;color:var(--dim-2);padding:12px 2px}
+  .voice{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 18px;text-align:center;margin-bottom:14px}
+  .voice .txt{font-size:15.5px;font-weight:600;line-height:1.55}
+  .voice .hint{font-size:10.5px;color:var(--dim-2);margin-top:9px}
+  .lpanel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .lbtn{padding:14px 8px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.14s}
+  .lbtn:active{transform:scale(.96)}
+  .lbtn.ok{background:rgba(61,220,151,.13);border-color:rgba(61,220,151,.5);color:var(--accent)}
+  .lbtn.bad{background:rgba(255,107,107,.11);border-color:rgba(255,107,107,.45);color:var(--red)}
+  .opt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:14px;border-radius:12px;
+    background:var(--panel);border:1px solid var(--line);color:var(--text);font-size:13.5px;font-family:inherit;
+    cursor:pointer;margin-bottom:8px;transition:.14s;line-height:1.5}
+  .opt:active{transform:scale(.985)}
+  .opt .k{width:22px;height:22px;flex:0 0 22px;border-radius:7px;background:var(--panel-2);color:var(--dim);
+    font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .opt.ok{background:rgba(61,220,151,.1);border-color:rgba(61,220,151,.45)}
+  .opt.ok .k{background:rgba(61,220,151,.2);color:var(--accent)}
+  .opt.bad{background:rgba(255,107,107,.09);border-color:rgba(255,107,107,.4)}
+  .opt.bad .k{background:rgba(255,107,107,.2);color:var(--red)}
+  .expl{margin-top:12px;padding:12px 14px;border-radius:11px;font-size:12px;line-height:1.65;color:var(--dim);background:var(--panel)}
+  .expl b{color:var(--accent)}
+  .expl.warn b{color:var(--red)}
+  .score{text-align:center;padding:22px 0 4px}
+  .score .big{font-size:46px;font-weight:800;line-height:1;color:var(--accent)}
+  .score .lab{font-size:12px;color:var(--dim-2);margin-top:9px}
+  .stat{display:flex;margin:18px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .stat .s{flex:1;padding:12px;text-align:center;border-right:1px solid var(--line)}
+  .stat .s:last-child{border-right:none}
+  .stat .s b{display:block;font-size:18px;margin-bottom:2px}
+  .stat .s span{font-size:10.5px;color:var(--dim-2)}
+  /* 速查：可展开 */
+  .tli{border-bottom:1px solid var(--line)}
+  .tli:last-child{border-bottom:none}
+  .ti{display:flex;align-items:center;gap:11px;padding:11px 0;cursor:pointer}
+  .ti .num{font-size:10.5px;color:var(--dim-2);width:22px;flex:0 0 22px;font-variant-numeric:tabular-nums}
+  .ti .nm{font-size:13px;flex:1}
+  .ti .nm em{font-style:normal;font-size:9.5px;color:var(--accent-2);border:1px solid rgba(77,163,255,.35);
+    border-radius:4px;padding:0 4px;margin-left:6px}
+  .ti .chev{color:var(--dim-2);font-size:11px;transition:.2s}
+  .tli.open .ti .chev{transform:rotate(90deg)}
+  .ti .dot{width:5px;height:5px;border-radius:50%;background:var(--dim-2);flex:0 0 5px}
+  .ti .dot.pub{background:var(--accent)}
+  .ti .dot.map{background:var(--accent-2)}
+  .ti .dot.inf{background:var(--warn)}
+  .tipbox{padding:0 0 15px 33px;animation:in .2s ease}
+  .tipbox .k{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:8px}
+  .tipbox .v{font-size:10.5px;color:var(--dim-2);margin-bottom:9px;padding-left:9px;border-left:2px solid var(--line)}
+  .tipbox .t{font-size:12px;color:var(--dim);line-height:1.7}
+  .tipbox .l{font-size:11px;color:var(--warn);line-height:1.6;margin-top:9px}
+  .tipbox .nt{font-size:11px;color:var(--accent-2);line-height:1.6;margin-top:7px}
+  .legend{display:flex;gap:14px;font-size:10.5px;color:var(--dim-2);margin-top:14px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .sp{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .sp:last-child{border-bottom:none}
+  .sp .si{width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--panel-2);
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--dim-2)}
+  .sp .st{font-size:13.5px;font-weight:500}
+  .sp .ss{font-size:10.5px;color:var(--dim-2);margin-top:3px}
+  .sp:active .st{color:var(--accent)}
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:62px;background:rgba(14,16,20,.94);backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);display:flex;padding-bottom:8px;z-index:50}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--dim-2);font-size:10px;cursor:pointer}
+  .tab .ti2{font-size:17px;line-height:1}
+  .tab.on{color:var(--accent)}
+  .toast{position:absolute;left:18px;right:18px;bottom:80px;z-index:80;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--dim);font-size:12px;line-height:1.6;padding:12px 14px;border-radius:12px;opacity:0;transform:translateY(8px);
+    transition:.22s;pointer-events:none}
+  .toast.show{opacity:1;transform:none}
+  .note{font-size:10.5px;color:var(--dim-2);line-height:1.65;margin-top:14px}
+  .fatal{padding:40px 24px;text-align:center;font-size:13px;color:var(--dim);line-height:1.9}
+  .fatal b{color:var(--red);display:block;font-size:15px;margin-bottom:10px}
+  @media(max-width:520px){
+    body{padding:0;align-items:stretch}.stagewrap{gap:0}.stagehint{display:none}
+    .phone{width:100%;height:100vh;height:100dvh;border-radius:0;border:none;box-shadow:none}
+    .notch,.statusbar{display:none}
+    .nav{padding-top:14px}
+  }
+</style>
+</head>
+<body>
+<div class="stagewrap">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span>科三路线通</span><span>▮▮▮</span></div>
+    <div class="app" id="app"></div>
+    <div class="toast" id="toast"></div>
+    <div class="tabbar" id="tabbar"></div>
+  </div>
+  <div class="stagehint">单文件 SPA · 直接点。<br>切到 <b>C1/C2</b> 看项目数与难点专项的变化；「速查」里点项目可看要点。</div>
+</div>
+
+<!-- ============ 数据层：内容维护只需改这几个文件 ============ -->
+<script src="data/items.js"></script>
+<script src="data/routes.js"></script>
+<script src="data/special.js"></script>
+<script src="data/lights.js"></script>
+
+<script>
+/* ============================================================
+   应用外壳 —— 这里只放交互逻辑，不放任何业务数据。
+   要改内容请编辑 data/ 目录下的文件。
+   ============================================================ */
+const MODEL_NAME = { c1:'C1 手动挡', c2:'C2 自动挡' };
+
+/* 数据加载失败兜底（例如只拷了 index.html 没拷 data/ 目录） */
+(function(){
+  const miss = [];
+  if(!window.KC3_ITEMS)   miss.push('data/items.js');
+  if(!window.KC3_ROUTES)  miss.push('data/routes.js');
+  if(!window.KC3_SPECIAL) miss.push('data/special.js');
+  if(!window.KC3_LIGHTS)  miss.push('data/lights.js');
+  if(miss.length){
+    document.getElementById('app').innerHTML =
+      '<div class="fatal"><b>数据文件没有加载成功</b>缺少：' + miss.join('、') +
+      '<br><br>请确认 <code>data/</code> 目录与 <code>index.html</code> 在同一层，' +
+      '并保持这个目录结构一起部署。</div>';
+    throw new Error('data files missing: ' + miss.join(','));
+  }
+})();
+
+const ITEMS   = window.KC3_ITEMS;
+const ROUTES  = window.KC3_ROUTES;
+const SPECIAL = window.KC3_SPECIAL;
+const LIGHTS  = window.KC3_LIGHTS;
+const OPS     = window.KC3_LIGHT_OPS;
+
+let S = { tab:'train', screen:'home', model:'c1', r:0, open:null,
+          Q:null, L:null, sp:0, sq:null, mistakes:[] };
+
+/* 本地持久化：SPA 无需后端即可保留进度 */
+const LS='kc3.v1';
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem(LS)||'null'); if(!d) return;
+    if(d.model==='c1'||d.model==='c2') S.model=d.model;
+    if(Array.isArray(d.mistakes)) S.mistakes=d.mistakes.slice(0,20);
+  }catch(e){}
+}
+function save(){
+  try{ localStorage.setItem(LS, JSON.stringify({model:S.model, mistakes:S.mistakes})); }catch(e){}
+}
+
+const $ = id => document.getElementById(id);
+const sh = a => { const b=a.slice(); for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
+let tT=null;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),3000); }
+
+/* 按车型过滤后的线路项目 —— 位置即顺序，用下标做唯一标识 */
+function routeItems(r){
+  return r.seq
+    .filter(n => !(ITEMS[n.id].c1 && S.model==='c2'))
+    .map((n,pos) => ({ pos, src:n.src||'std', tag:n.tag, item:ITEMS[n.id],
+                       label: ITEMS[n.id].name + (n.tag ? '（'+n.tag+'）' : '') }));
+}
+
+/* ============================================================ 渲染 */
+function render(){
+  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ};
+  $('app').innerHTML=(M[S.screen]||vHome)();
+  $('app').scrollTop=0;
+  tabs(); bind(); save();
+}
+function tabs(){
+  const on=['home','scan','mine'].includes(S.screen);
+  const tb=$('tabbar');
+  if(!on){ tb.style.display='none'; return; }
+  tb.style.display='flex';
+  tb.innerHTML=[['train','训练','◎'],['scan','速查','≡'],['mine','我的','◔']]
+    .map(([k,l,i])=>`<div class="tab ${S.tab===k?'on':''}" data-tab="${k}"><span class="ti2">${i}</span>${l}</div>`).join('');
+}
+
+/* ---------- 首页 ---------- */
+function vHome(){
+  return `<div class="screen">
+    <div class="nav"><div><h1>练哪条线？</h1><div class="lead">苏州科技城 · 4 条线路</div></div></div>
+    <div class="seg">
+      <button class="segb ${S.model==='c1'?'on':''}" data-model="c1">C1 手动挡</button>
+      <button class="segb ${S.model==='c2'?'on':''}" data-model="c2">C2 自动挡</button>
+    </div>
+    <div class="segcap">${S.model==='c1'?'考核 16 项 · 含加减挡位操作':'考核 15 项 · 取消加减挡位操作'}</div>
+
+    <div class="heroes" style="margin-top:16px">
+      <div class="hero" data-go="lights"><div class="ico b">◐</div>
+        <div class="ht">灯光模拟</div><div class="hp">两车型相同 · 抽 5 题</div></div>
+      <div class="hero" data-go="special"><div class="ico o">⚑</div>
+        <div class="ht">难点专项</div><div class="hp">${SPECIAL[S.model].length} 个高频失分点</div></div>
+    </div>
+
+    <div class="sechead">路线顺序训练</div>
+    ${ROUTES.map((r,i)=>{
+      const n=routeItemsFor(r).length;
+      return `<div class="row" data-r="${i}">
+        <div class="rn">${r.no}</div><div class="rt">${r.name}</div>
+        <div class="rc">${n} 项</div><div class="arw">›</div></div>`;
+    }).join('')}
+  </div>`;
+}
+function routeItemsFor(r){
+  return r.seq.filter(n => !(ITEMS[n.id].c1 && S.model==='c2'));
+}
+
+/* ---------- 顺序排序题：一次排完整条线路 ---------- */
+function vOrder(){
+  const r=ROUTES[S.r], items=routeItems(r);
+  if(!S.Q || S.Q.r!==S.r || S.Q.model!==S.model) S.Q = newQ(items);
+  const q=S.Q, done=q.judged;
+  const pool=q.pool.filter(p=>!q.ans.includes(p));
+  const okN=q.ans.filter((p,i)=>p===i).length;
+
+  const rows = q.ans.length ? q.ans.map((p,i)=>{
+    const ok = done && p===i;
+    return `<div class="arow ${done?(ok?'ok':'bad'):''}" data-un="${p}">
+      <div class="n">${done?(ok?'✓':'✕'):i+1}</div>
+      <div>${q.items[p].label}</div>
+      ${done&&!ok?`<div class="fix">应为 ${q.items[i].label}</div>`:(done?'':'<div class="x">✕</div>')}
+    </div>`;}).join('')
+    : `<div class="empty">按顺序点选上方项目</div>`;
+
+  return `<div class="screen">
+    <div class="nav navflat">
+      <div class="back" data-go="home">‹</div>
+      <div><div class="navtitle">${r.name} · 顺序</div>
+      <div class="navsub">共 ${items.length} 项 · ${MODEL_NAME[S.model]}</div></div>
+      <div class="spacer"></div>
+      ${done?`<div class="navsub" style="color:var(--accent)">${okN}/${q.items.length}</div>`:''}
+    </div>
+    ${!done?`<div class="poolstick">
+      <div class="prog"><div class="bar"><i style="width:${q.ans.length/q.items.length*100}%"></i></div><span>${q.ans.length}/${q.items.length}</span></div>
+      <div class="lbl" style="margin-bottom:7px">待选 ${pool.length}</div>
+      <div class="pool">${sh(pool).map(p=>`<div class="chip" data-p="${p}">${q.items[p].label}</div>`).join('')}</div>
+    </div>`:''}
+    <div class="lbl" style="margin-top:${done?'0':'10px'}">${done?'对照':'你的顺序'}</div>
+    <div class="applied">${rows}</div>
+    <div class="btm">
+      ${done
+        ? `<div class="btnrow"><button class="btn ghost" data-act="redo">重排</button>
+           <button class="btn" data-go="scan">看要点</button></div>`
+        : `<button class="btn" ${q.ans.length!==q.items.length?'disabled':''} data-act="submit">${q.ans.length!==q.items.length?`还差 ${q.items.length-q.ans.length} 项`:'提交'}</button>`}
+    </div>
+  </div>`;
+}
+function newQ(items){
+  const correct=items.map((_,i)=>i);
+  return { r:S.r, model:S.model, items, correct, pool:sh(correct), ans:[], judged:false };
+}
+
+/* ---------- 难点专项 ---------- */
+function vSpecial(){
+  const list=SPECIAL[S.model];
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div>
+      <div><div class="navtitle">难点专项</div>
+      <div class="navsub">${MODEL_NAME[S.model]} · 按真实失分点组织</div></div></div>
+    <div class="note" style="margin:0 0 14px">这些不是路线顺序，而是<b style="color:var(--accent)">该车型最容易丢分的手法</b>。顺序题练记忆，专项练手法。</div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 16px">
+      ${list.map((x,i)=>`<div class="sp" data-sp="${i}">
+        <div class="si">${x.type==='order'?'排序':'单选'}</div>
+        <div style="flex:1"><div class="st">${x.t}</div><div class="ss">${x.s}</div></div>
+        <div class="arw">›</div></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function vSQ(){
+  const t=SPECIAL[S.model][S.sp];
+  if(!S.sq || S.sq.t!==S.sp || S.sq.model!==S.model)
+    S.sq = t.type==='order' ? {t:S.sp,model:S.model,ans:[],judged:false}
+                            : {t:S.sp,model:S.model,picked:null};
+
+  const nav=`<div class="nav"><div class="back" data-go="special">‹</div>
+    <div><div class="navtitle">${t.t}</div><div class="navsub">${MODEL_NAME[S.model]} · 难点专项</div></div></div>`;
+
+  if(t.type==='order'){
+    const q=S.sq, done=q.judged, pool=t.steps.map((_,i)=>i).filter(p=>!q.ans.includes(p));
+    const okN=q.ans.filter((p,i)=>p===i).length;
+    const rows = q.ans.length ? q.ans.map((p,i)=>{
+      const ok=done&&p===i;
+      return `<div class="arow ${done?(ok?'ok':'bad'):''}" data-sun="${p}">
+        <div class="n">${done?(ok?'✓':'✕'):i+1}</div><div>${t.steps[p]}</div>
+        ${done&&!ok?`<div class="fix">应为 ${t.steps[i]}</div>`:(done?'':'<div class="x">✕</div>')}</div>`;
+    }).join('') : `<div class="empty">按正确操作顺序点选</div>`;
+
+    return `<div class="screen">${nav}
+      <div class="note" style="margin:0 0 16px">${t.s}</div>
+      ${!done?`<div class="prog"><div class="bar"><i style="width:${q.ans.length/t.steps.length*100}%"></i></div><span>${q.ans.length}/${t.steps.length}</span></div>
+        <div class="lbl">待选</div>
+        <div class="pool">${sh(pool).map(p=>`<div class="chip" data-sp2="${p}">${t.steps[p]}</div>`).join('')}</div>`:''}
+      <div class="lbl" style="margin-top:${done?'0':'22px'}">${done?'对照':'你的顺序'}</div>
+      <div class="applied">${rows}</div>
+      ${done?`<div class="expl">${okN===t.steps.length?'<b>顺序完全正确</b>｜':'<b>再看一遍</b>｜'}${t.tip}</div>`:''}
+      <div class="btm">${done
+        ? `<div class="btnrow"><button class="btn ghost" data-act="sredo">重做</button>
+           <button class="btn" data-go="special">返回</button></div>`
+        : `<button class="btn" ${q.ans.length!==t.steps.length?'disabled':''} data-act="ssubmit">${q.ans.length!==t.steps.length?`还差 ${t.steps.length-q.ans.length} 步`:'提交'}</button>`}</div>
+    </div>`;
+  }
+
+  const p=S.sq.picked, done=p!==null, KEYS=['A','B','C','D'];
+  return `<div class="screen">${nav}
+    <div class="note" style="margin:0 0 16px">${t.s}</div>
+    <div style="font-size:15px;font-weight:600;line-height:1.55;margin-bottom:16px">${t.q}</div>
+    ${t.opts.map((o,i)=>{
+      let c=''; if(done){ if(i===t.a) c='ok'; else if(i===p) c='bad'; }
+      return `<button class="opt ${c}" ${done?'disabled':''} data-opt="${i}">
+        <span class="k">${KEYS[i]}</span><span>${o}</span></button>`;}).join('')}
+    ${done?`<div class="expl ${p===t.a?'':'warn'}">${p===t.a?'<b>答对了</b>':'<b>正确答案：'+KEYS[t.a]+'</b>'}｜${t.tip}</div>
+      <div class="btm"><button class="btn ghost" data-act="sredo">再做一次</button></div>`:''}
+  </div>`;
+}
+
+/* ---------- 灯光 ---------- */
+function vLights(){
+  if(!S.L) S.L={set:sh(LIGHTS).slice(0,5),i:0,ok:0,log:[]};
+  const L=S.L;
+  if(L.i>=L.set.length) return vLightResult();
+  const q=L.set[L.i], p=L.log[L.i];
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div>
+      <div><div class="navtitle">灯光模拟</div><div class="navsub">第 ${L.i+1}/${L.set.length} 题 · 两车型相同</div></div>
+      <div class="spacer"></div><div class="navsub" style="color:var(--accent)">✓ ${L.ok}</div></div>
+    <div class="voice"><div class="txt">「${q[0]}」</div><div class="hint">语音播报 · 3 秒内操作</div></div>
+    <div class="lpanel">${OPS.map(o=>{
+      let c=''; if(p){ if(o===q[1]) c='ok'; else if(o===p.o) c='bad'; }
+      return `<button class="lbtn ${c}" ${p?'disabled':''} data-o="${o}">${o}</button>`;}).join('')}</div>
+    ${p?`<div class="expl ${p.o===q[1]?'':'warn'}">${p.o===q[1]?'<b>选对了</b>':'<b>应选 '+q[1]+'</b>'}｜${q[2]}</div>
+      <div class="btm"><button class="btn" data-act="lnext">${L.i+1<L.set.length?'下一题':'看成绩'}</button></div>`:''}
+  </div>`;
+}
+function vLightResult(){
+  const L=S.L;
+  const wrong=L.set.map((q,i)=>({q,p:L.log[i]||{o:'—'}})).filter(x=>x.p.o!==x.q[1]);
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div><div class="navtitle">灯光成绩</div></div>
+    <div class="score"><div class="big">${L.ok*20}</div><div class="lab">${L.ok===L.set.length?'满分，这一段稳了':'错题已记入「我的」'}</div></div>
+    <div class="stat"><div class="s"><b style="color:var(--accent)">${L.ok}</b><span>答对</span></div>
+      <div class="s"><b style="color:var(--red)">${L.set.length-L.ok}</b><span>答错</span></div></div>
+    <div class="sechead">错题</div>
+    ${wrong.length? wrong.map(x=>`<div class="arow bad" style="margin-bottom:6px">
+        <div><div style="font-size:12.5px">${x.q[0]}</div>
+        <div style="font-size:11px;color:var(--dim-2);margin-top:3px">你选 ${x.p.o} · 应选 ${x.q[1]}</div></div></div>`).join('')
+      : `<div class="empty">全对，没有错题</div>`}
+    <div class="btm"><button class="btn ghost" data-act="lreset">再来一轮</button></div>
+  </div>`;
+}
+
+/* ---------- 速查：可展开看要点 ---------- */
+function vScan(){
+  const r=ROUTES[S.r], items=routeItems(r);
+  return `<div class="screen">
+    <div class="nav"><div><h1>项目速查</h1>
+      <div class="lead">${r.name} · ${MODEL_NAME[S.model]} · 共 ${items.length} 项</div></div></div>
+    <div class="pool" style="margin-bottom:6px">
+      ${ROUTES.map((x,i)=>`<div class="chip" style="border-color:${i===S.r?'var(--accent)':'var(--line)'};color:${i===S.r?'var(--accent)':'var(--text)'}" data-sel="${i}">${x.name}</div>`).join('')}
+    </div>
+    <div class="note" style="margin:0 0 12px">点任意一项，展开看<b style="color:var(--accent)">口诀、播报文本、操作要点与扣分点</b>。</div>
+    <div>${items.map((x,i)=>`
+      <div class="tli ${S.open===i?'open':''}">
+        <div class="ti" data-tip="${i}">
+          <div class="num">${String(i+1).padStart(2,'0')}</div>
+          <div class="nm">${x.label}${x.item.c1?'<em>C1 专属</em>':''}</div>
+          <div class="dot ${x.src}"></div>
+          <div class="chev">›</div>
+        </div>
+        ${S.open===i?`<div class="tipbox">
+          <div class="k">${x.item.key}</div>
+          <div class="v">${x.item.voice}</div>
+          <div class="t">${x.item.tip}</div>
+          <div class="l">⚠ ${x.item.lose}</div>
+          ${x.item.note?`<div class="nt">＋ ${x.item.note}</div>`:''}
+        </div>`:''}
+      </div>`).join('')}</div>
+    <div class="legend">
+      <span><i style="background:var(--dim-2)"></i>国家必考</span>
+      <span><i style="background:var(--accent)"></i>实测已核</span>
+      <span><i style="background:var(--accent-2)"></i>图上标注</span>
+      <span><i style="background:var(--warn)"></i>待教练校准</span>
+    </div>
+    <div class="note">${S.model==='c2'?'C2 自动挡无「加减挡位操作」，故为 15 项。':'C1 手动挡含「加减挡位操作」，共 16 项。'}橙点项位置由路线结构推导，请教练确认后再用于正式版本。</div>
+  </div>`;
+}
+
+/* ---------- 我的 ---------- */
+function vMine(){
+  const m=S.mistakes;
+  return `<div class="screen">
+    <div class="nav"><div><h1>我的</h1></div></div>
+    <div class="sechead">错题本 · ${m.length}</div>
+    ${m.length? m.slice(0,12).map(x=>`<div class="arow bad" style="margin-bottom:6px">
+        <div><div style="font-size:12.5px">${x.q}</div>
+        <div style="font-size:10.5px;color:var(--dim-2);margin-top:3px">${x.from}</div></div></div>`).join('')
+      : `<div class="empty">还没有错题。排错的项目会自动出现在这里。</div>`}
+  </div>`;
+}
+
+/* ============================================================ 绑定 */
+function bind(){
+  document.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>{
+    const g=el.dataset.go;
+    if(g==='lights') S.L=null;
+    if(g==='special') S.sq=null;
+    S.screen=g; if(g==='home') S.tab='train'; if(g==='scan') S.tab='scan';
+    render();
+  });
+  document.querySelectorAll('[data-tab]').forEach(el=>el.onclick=()=>{
+    const t=el.dataset.tab; S.tab=t;
+    S.screen = t==='train'?'home':t==='scan'?'scan':'mine'; render();
+  });
+  document.querySelectorAll('[data-model]').forEach(el=>el.onclick=()=>{
+    if(el.dataset.model===S.model) return;
+    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; render();
+  });
+  document.querySelectorAll('[data-r]').forEach(el=>el.onclick=()=>{
+    S.r=+el.dataset.r; S.Q=null; S.open=null; S.screen='order'; render();
+  });
+  document.querySelectorAll('[data-sel]').forEach(el=>el.onclick=()=>{ S.r=+el.dataset.sel; S.open=null; render(); });
+  document.querySelectorAll('[data-tip]').forEach(el=>el.onclick=()=>{
+    const i=+el.dataset.tip; S.open = (S.open===i ? null : i); render();
+  });
+  document.querySelectorAll('[data-sp]').forEach(el=>el.onclick=()=>{
+    S.sp=+el.dataset.sp; S.sq=null; S.screen='sq'; render();
+  });
+
+  /* 路线排序 */
+  document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{ S.Q.ans.push(+el.dataset.p); render(); });
+  document.querySelectorAll('[data-un]').forEach(el=>el.onclick=()=>{
+    if(!S.Q||S.Q.judged) return;
+    const p=+el.dataset.un, i=S.Q.ans.indexOf(p); if(i>-1){ S.Q.ans.splice(i,1); render(); }
+  });
+
+  /* 专项排序 */
+  document.querySelectorAll('[data-sp2]').forEach(el=>el.onclick=()=>{ S.sq.ans.push(+el.dataset.sp2); render(); });
+  document.querySelectorAll('[data-sun]').forEach(el=>el.onclick=()=>{
+    if(!S.sq||S.sq.judged) return;
+    const p=+el.dataset.sun, i=S.sq.ans.indexOf(p); if(i>-1){ S.sq.ans.splice(i,1); render(); }
+  });
+  /* 专项单选 */
+  document.querySelectorAll('[data-opt]').forEach(el=>el.onclick=()=>{
+    if(!S.sq||S.sq.picked!==null) return;
+    const t=SPECIAL[S.model][S.sp], i=+el.dataset.opt;
+    S.sq.picked=i;
+    if(i!==t.a) S.mistakes.unshift({q:t.t+` → ${t.opts[t.a]}`,from:MODEL_NAME[S.model]+' · 难点专项'});
+    S.mistakes=S.mistakes.slice(0,20); render();
+  });
+
+  /* 灯光 */
+  document.querySelectorAll('[data-o]').forEach(el=>el.onclick=()=>{
+    const L=S.L; if(!L||L.log[L.i]) return;
+    const o=el.dataset.o, q=L.set[L.i];
+    L.log[L.i]={o};
+    if(o===q[1]) L.ok++; else S.mistakes.unshift({q:`${q[0]} → ${q[1]}`,from:'灯光模拟'});
+    S.mistakes=S.mistakes.slice(0,20); render();
+  });
+
+  /* 动作 */
+  document.querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>{
+    const a=el.dataset.act;
+    if(a==='submit'){
+      const q=S.Q; q.judged=true;
+      q.ans.forEach((p,i)=>{ if(p!==i)
+        S.mistakes.unshift({q:`「${q.items[p].label}」应是第 ${i+1} 步`,from:ROUTES[S.r].name+' · 顺序'}); });
+      S.mistakes=S.mistakes.slice(0,20);
+    }
+    if(a==='redo') S.Q=newQ(routeItems(ROUTES[S.r]));
+    if(a==='ssubmit'){
+      const t=SPECIAL[S.model][S.sp], q=S.sq; q.judged=true;
+      q.ans.forEach((p,i)=>{ if(p!==i)
+        S.mistakes.unshift({q:`${t.t}：「${t.steps[p]}」应是第 ${i+1} 步`,from:MODEL_NAME[S.model]+' · 难点专项'}); });
+      S.mistakes=S.mistakes.slice(0,20);
+    }
+    if(a==='sredo') S.sq=null;
+    if(a==='lnext') S.L.i++;
+    if(a==='lreset') S.L=null;
+    render();
+  });
+}
+load();
+render();
+</script>
+</body>
+</html>

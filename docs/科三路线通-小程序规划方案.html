@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科三路线通 · 微信小程序规划方案</title>
+<style>
+  :root{
+    --bg:#0e1014;
+    --panel:#161a21;
+    --panel-2:#1c212a;
+    --line:#2a313d;
+    --text:#e8ecf2;
+    --dim:#9aa5b4;
+    --dim-2:#6d7889;
+    --accent:#3ddc97;
+    --accent-2:#4da3ff;
+    --warn:#ffb454;
+    --red:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 24px 96px}
+  /* header */
+  .hero{border:1px solid var(--line);border-radius:18px;padding:34px 32px;background:
+    radial-gradient(900px 300px at 8% -30%,rgba(61,220,151,.16),transparent 60%),
+    radial-gradient(700px 260px at 92% 0%,rgba(77,163,255,.14),transparent 60%),
+    var(--panel);}
+  .kicker{font-size:12px;letter-spacing:.18em;color:var(--accent);font-weight:700;text-transform:uppercase}
+  h1{font-size:30px;line-height:1.3;margin:10px 0 12px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:15px;max-width:760px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .chip{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);color:var(--dim);background:rgba(255,255,255,.02)}
+  .chip.on{color:var(--accent);border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.08)}
+  /* sections */
+  section{margin-top:52px}
+  h2{font-size:21px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  h2 .n{font-size:12px;font-weight:800;color:var(--bg);background:var(--accent);border-radius:6px;padding:2px 8px;letter-spacing:.04em}
+  .h2sub{color:var(--dim-2);font-size:14px;margin-bottom:18px}
+  h3{font-size:16px;margin:26px 0 10px;color:var(--text)}
+  h3::before{content:"";display:inline-block;width:3px;height:14px;background:var(--accent-2);border-radius:2px;margin-right:9px;transform:translateY(1px)}
+  p{color:var(--dim);font-size:15px}
+  strong{color:var(--text);font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:820px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  /* module cards */
+  .mod{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+  .mod::after{content:attr(data-tag);position:absolute;top:14px;right:16px;font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--dim-2)}
+  .mod h4{font-size:16px;margin-bottom:8px}
+  .mod p{font-size:13.5px;line-height:1.7}
+  .mod ul{margin:12px 0 0 0;padding-left:0;list-style:none}
+  .mod li{font-size:13.5px;color:var(--dim);padding-left:16px;position:relative;margin-bottom:5px}
+  .mod li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--accent-2)}
+  .mod.core{border-color:rgba(61,220,151,.45);background:linear-gradient(180deg,rgba(61,220,151,.07),transparent 70%),var(--panel)}
+  .mod.core li::before{background:var(--accent)}
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim-2);font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;background:rgba(255,255,255,.02)}
+  td{color:var(--dim)}
+  td strong{color:var(--text)}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700;white-space:nowrap}
+  .t-p0{background:rgba(255,107,107,.14);color:#ff8f8f}
+  .t-p1{background:rgba(255,180,84,.14);color:var(--warn)}
+  .t-p2{background:rgba(77,163,255,.14);color:#78bcff}
+  .t-ok{background:rgba(61,220,151,.14);color:var(--accent)}
+  /* code */
+  pre{background:#0a0c10;border:1px solid var(--line);border-radius:12px;padding:18px;overflow-x:auto;font-size:12.5px;line-height:1.65;color:#c8d3e0;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  pre .k{color:#78bcff}.f{color:#3ddc97}.s{color:#e5c07b}.c{color:#5c6675;font-style:italic}
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin-top:14px}
+  .fstep{flex:1;min-width:150px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .fstep b{display:block;font-size:13.5px;margin-bottom:4px}
+  .fstep span{font-size:12px;color:var(--dim-2);line-height:1.6}
+  .arrow{align-self:center;color:var(--dim-2);padding:0 10px;font-size:16px}
+  @media(max-width:820px){.arrow{transform:rotate(90deg);padding:6px 0}}
+  /* callout */
+  .note{border-left:3px solid var(--warn);background:rgba(255,180,84,.06);border-radius:0 10px 10px 0;padding:14px 18px;margin-top:16px;font-size:13.5px;color:var(--dim)}
+  .note b{color:var(--warn)}
+  .tip{border-left:3px solid var(--accent);background:rgba(61,220,151,.06);border-radius:0 10px 10px 0;padding:14px 18px;margin-top:16px;font-size:13.5px;color:var(--dim)}
+  .tip b{color:var(--accent)}
+  /* node pills */
+  .pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .pill{font-size:12px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);color:var(--dim)}
+  .pill.k{border-color:rgba(61,220,151,.35);color:var(--accent);background:rgba(61,220,151,.07)}
+  footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--line);color:var(--dim-2);font-size:12.5px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">产品规划方案 · v1.0</div>
+    <h1>科三路线通 · 苏州科技城</h1>
+    <p class="sub">一款面向「科目三」备考学员的微信小程序。<b style="color:var(--text)">支持 C1 手动挡 / C2 自动挡切换</b>——把「背路线」从死记硬背，变成<b style="color:var(--text)">选择 + 排序</b>的闯关式训练：按线路考顺序，按车型考难点手法，按场景考灯光操作。</p>
+    <div class="meta">
+      <span class="chip on">微信小程序</span>
+      <span class="chip on">C1 手动 16 项 / C2 自动 15 项</span>
+      <span class="chip">4 条线路</span>
+      <span class="chip">顺序训练 + 难点专项 + 灯光</span>
+      <span class="chip">云开发 / 免服务器</span>
+      <span class="chip">MVP 建议 2 周</span>
+    </div>
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2><span class="n">01</span>产品定位与目标用户</h2>
+    <div class="h2sub">先回答一个问题：学员到底卡在哪里？</div>
+    <div class="grid g4">
+      <div class="card">
+        <div style="font-size:26px">🧠</div>
+        <h4 style="font-size:15px;margin:8px 0 6px">记不住顺序</h4>
+        <p style="font-size:13px">练车时全靠教练喊「该超车了」，自己脑子里没有完整流程。</p>
+      </div>
+      <div class="card">
+        <div style="font-size:26px">🔀</div>
+        <h4 style="font-size:15px;margin:8px 0 6px">线路混着记</h4>
+        <p style="font-size:13px">1 号线和 4 号线有两个版本，项目位置不同，越练越糊。</p>
+      </div>
+      <div class="card">
+        <div style="font-size:26px">💡</div>
+        <h4 style="font-size:15px;margin:8px 0 6px">灯光容易挂</h4>
+        <p style="font-size:13px">语音一响脑子空白，远近交替 / 雾灯双闪该选哪个反应不过来。</p>
+      </div>
+      <div class="card">
+        <div style="font-size:26px">📱</div>
+        <h4 style="font-size:15px;margin:8px 0 6px">没有随时自测</h4>
+        <p style="font-size:13px">只能到驾校才能练，碎片时间（通勤、排队）完全浪费。</p>
+      </div>
+    </div>
+    <div class="tip" style="margin-top:20px">
+      <b>核心洞察：</b>科目三真正的考点不是「会不会开车」，而是<b>在正确的路段，按正确的顺序，做正确的动作</b>。所以产品的主线交互不该是「看视频/看文章」，而是<b>让学员自己把顺序排出来、把项目选出来</b>——输出式记忆远比输入式有效。
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2><span class="n">02</span>功能架构</h2>
+    <div class="h2sub">四个模块，一个核心</div>
+    <div class="grid g2">
+      <div class="mod core" data-tag="M2 · CORE">
+        <h4>🧩 路线记忆训练 <span class="tag t-ok" style="margin-left:6px">核心差异化</span></h4>
+        <p>按线路出题，三种题型由易到难，覆盖「整体顺序 → 单点判断 → 空间位置」三个记忆层次。</p>
+        <ul>
+          <li><b>顺序排序题</b>：打乱项目卡片，点选排成正确顺序</li>
+          <li><b>情境判断题</b>：播报「行驶到 XX」，四选一选操作</li>
+          <li><b>地图定位题</b>：在路线图上点出项目发生的路段</li>
+          <li><b>跨线路混淆模式</b>：多线混合，专治「练 A 考 B」</li>
+        </ul>
+      </div>
+      <div class="mod core" data-tag="M3 · 新增">
+        <h4>⚑ 难点专项 <span class="tag t-ok" style="margin-left:6px">按车型</span></h4>
+        <p>顺序题练的是<b>记忆</b>，专项练的是<b>手法</b>。针对 C1 / C2 各自的真实失分点，单独成套。</p>
+        <ul>
+          <li><b>操作步骤排序</b>：起步、加减挡、靠边停车…按正确顺序点出</li>
+          <li><b>判断题</b>：油离配合、踏板使用、车速要求等易错认知</li>
+          <li>C1 与 C2 内容不同，跟随车型开关自动切换</li>
+        </ul>
+      </div>
+      <div class="mod" data-tag="M1">
+        <h4>💡 灯光模拟考试</h4>
+        <p>两车型<b>完全相同</b>的通用模块。语音念场景，学员在模拟灯控面板上操作，3 秒内判定。</p>
+        <ul>
+          <li>12 组标准夜间场景题库</li>
+          <li>练习模式：即时讲解为什么</li>
+          <li>考试模式：连续 5 题，汇总判分</li>
+          <li>高危题强制复练（雾天 / 故障停车）</li>
+        </ul>
+      </div>
+      <div class="mod" data-tag="M4">
+        <h4>🗺️ 路线速查（学习模式）</h4>
+        <p>不考，只用来「学」和「考前过一遍」。是训练模式的知识底座。</p>
+        <ul>
+          <li>线路图 + 可点击项目节点，弹出操作要点</li>
+          <li>「第一视角」时间轴：像跟车一样逐步播报</li>
+          <li>每项配一句<b>口诀</b>与<b>扣分点</b></li>
+        </ul>
+      </div>
+      <div class="mod" data-tag="M5">
+        <h4>📊 我的 · 错题与掌握度</h4>
+        <p>让进步看得见，也是留存的关键。</p>
+        <ul>
+          <li>错题本，按线路 / 车型 / 题型分组</li>
+          <li>4 条线路掌握度进度条（弱项一目了然）</li>
+          <li>「整场模拟」：抽一条线路从头考到尾</li>
+        </ul>
+      </div>
+      <div class="mod" data-tag="M6">
+        <h4>🔍 数据来源可追溯 <span class="tag t-p1" style="margin-left:6px">长期壁垒</span></h4>
+        <p>每个节点带来源标记（国标 / 实测 / 图上 / 待校准），UI 上用圆点可视化。</p>
+        <ul>
+          <li>学员看得见「哪些是已确认的」</li>
+          <li>我们一眼筛出待核项，不靠记忆</li>
+          <li>教练校准后再转为正式数据</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2><span class="n">03</span>核心题型设计</h2>
+    <div class="h2sub">这是产品的灵魂，也是最该先做对的部分</div>
+
+    <h3>题型 A · 顺序排序（考整体流程）</h3>
+    <p>屏幕上方是<b>待选池</b>（打乱的项目卡片），下方是<b>答题区</b>。学员按自己记忆的顺序依次点入，点错可移除。提交后逐项标红/标绿，并给出正确顺序对照。</p>
+    <div class="flow">
+      <div class="fstep"><b>① 选线路</b><span>1号线 / 2号线 / 4号线① / 4号线②</span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>② 打乱卡片</b><span>从待选池点选，依次放入答题区</span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>③ 提交判分</b><span>逐项对错高亮 + 正确顺序对照</span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>④ 错题入本</b><span>排错的项自动进错题本，次日重推</span></div>
+    </div>
+
+    <h3>题型 B · 情境判断（考单点记忆）</h3>
+    <p>模拟真实语音播报，例如：「<i>前方路口请右转</i>」「<i>现在开始百米直线行驶</i>」，四选一选择对应操作。干扰项专门取自<b>同一线路的其他项目</b>，逼学员区分相邻路段。</p>
+
+    <h3>题型 C · 跨线路混合（考区分能力）★ 杀手锏</h3>
+    <p>同时抛出 2~3 条线路的片段，让学员判断「这一步属于哪条线 / 该线路在这一步做什么」。这是苏州科技城多线路考场最真实的痛点——<b>别人都在做单线记忆，我们做跨线区分</b>，这是天然的差异化壁垒。</p>
+
+    <h3>题型 D · 难点专项（考手法，不考记忆）★ 按车型分叉</h3>
+    <p>顺序题解决的是「记不记得住」，专项解决的是「手法对不对」。这两件事必须分开练——很多学员路线背得滚瓜烂熟，一上车还是熄火。专项题同样是<b>操作步骤排序</b>与<b>判断题</b>两种形态，但题目内容<b>按车型分叉</b>。</p>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card" style="border-color:rgba(61,220,151,.4)">
+        <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:4px">C1 手动挡 · 6 个专项</div>
+        <p style="font-size:12.5px;color:var(--dim-2);margin-bottom:12px">失分集中在「手脚配合」与「挡位时机」</p>
+        <div class="pills">
+          <span class="pill k">起步顺序</span><span class="pill k">加减挡操作顺序</span><span class="pill k">靠边停车顺序</span>
+          <span class="pill k">油离配合</span><span class="pill k">四挡要求</span><span class="pill k">直线行驶</span>
+        </div>
+        <p style="font-size:12.5px;margin-top:12px"><b>已知痛点：</b>C1 科三失误中 <b>40% 以上</b>源于熄火、脱挡或挡速不匹配；「离合器没松完不能踩油门，油门没松彻底不能碰离合」是反复出错的一条。</p>
+      </div>
+      <div class="card" style="border-color:rgba(77,163,255,.4)">
+        <div style="font-size:14px;font-weight:700;color:var(--accent-2);margin-bottom:4px">C2 自动挡 · 6 个专项</div>
+        <p style="font-size:12.5px;color:var(--dim-2);margin-bottom:12px">失分转移到「观察预判」与「踏板习惯」</p>
+        <div class="pills">
+          <span class="pill k">起步顺序</span><span class="pill k">靠边停车（P 挡）顺序</span><span class="pill k">踏板使用</span>
+          <span class="pill k">车速控制</span><span class="pill k">超车新规</span><span class="pill k">观察与预判</span>
+        </div>
+        <p style="font-size:12.5px;margin-top:12px"><b>反直觉的一点：</b>自动挡操作更简单，但<b>通过率反而略低</b>（约 81% vs 手动挡 85%）——难点转移到观察、转向灯与点刹这些细节上。<b>这正是产品能讲给 C2 学员的价值。</b></p>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>为什么顺序题是重点：</b>科目三考试全程约 15~20 个考核项，任何一个顺序记错就可能引发连锁错误（比如该掉头的地方没提前变道）。顺序题用「输出」代替「阅读」，记忆留存率显著更高，且天然适合手机碎片时间。
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2><span class="n">04</span>官方考核项目与线路序列</h2>
+    <div class="h2sub">依据公安部令第 162 号第三十四条 —— C1 手动挡 16 项 / C2 自动挡 15 项，每条线路都是这些项的一个排列</div>
+
+    <div class="tip" style="margin-top:0;margin-bottom:20px">
+      <b>先纠正一个容易搞错的点：</b>科目三道路驾驶技能考试的考核项是<b>国家统一规定的 16 项</b>，不是各考场自定的。
+      考场之间的差别不在于「考几项」，而在于<b>这 16 项排成什么顺序、在哪个路段做</b>。
+      所以任何一条线路的考核项数量都应当是 <b>16 项</b>，少于 16 的清单一定是漏了项。
+    </div>
+
+    <h3>官方 16 项（公安部令第 162 号 · 第三十四条）</h3>
+    <table>
+      <tr><th style="width:22%">项目</th><th style="width:34%">考场常见播报 / 俗称</th><th>关键点</th></tr>
+      <tr><td><strong>1. 上车准备</strong></td><td>绕车一周</td><td>逆时针绕车、按感应按钮、调座椅后视镜、系安全带、复位灯光挡位</td></tr>
+      <tr><td><strong>2. 模拟夜间灯光</strong></td><td>灯光考试</td><td>首考项，语音结束后 5 秒内完成，错一次扣 100 分</td></tr>
+      <tr><td><strong>3. 起步</strong></td><td>起步</td><td>左转向灯≥3 秒、鸣笛、观察后视镜、不闯动不熄火</td></tr>
+      <tr><td><strong>4. 直线行驶</strong></td><td>百米直线</td><td>车辆保持直线，不骑轧分道线，微调方向</td></tr>
+      <tr><td><strong>5. 加减挡位操作</strong></td><td>升四挡 / 40 码</td><td>逐级加减挡，不越级，不低头看挡</td></tr>
+      <tr><td><strong>6. 变更车道</strong></td><td>变更车道</td><td>转向灯≥3 秒 + 回头观察，一次只变一条车道</td></tr>
+      <tr><td><strong>7. 靠边停车</strong></td><td>靠边停车</td><td>终点项，车身距路沿 ≤30cm，不压线</td></tr>
+      <tr><td><strong>8. 直行通过路口</strong></td><td>路口直行</td><td>减速观察，车速低于 30km/h，路口内禁停</td></tr>
+      <tr><td><strong>9. 路口左转弯</strong></td><td>左转</td><td>左转向灯≥3 秒，按导向箭头，二挡及以下</td></tr>
+      <tr><td><strong>10. 路口右转弯</strong></td><td>右转</td><td>右转向灯≥3 秒，注意非机动车</td></tr>
+      <tr><td><strong>11. 通过人行横道线</strong></td><td>人行道（常无语音）</td><td>主动点刹，需自行观察</td></tr>
+      <tr><td><strong>12. 通过学校区域</strong></td><td>学校区域</td><td>减速至 30km/h 以下，禁止鸣笛</td></tr>
+      <tr><td><strong>13. 通过公共汽车站</strong></td><td>公交站台</td><td>减速观察，点刹</td></tr>
+      <tr><td><strong>14. 会车</strong></td><td>会车</td><td>减速靠右，保持车距，不压非机动车道线</td></tr>
+      <tr><td><strong>15. 超车</strong></td><td>超越前方车辆</td><td>只能左侧超车，完成后驶回原车道</td></tr>
+      <tr><td><strong>16. 掉头</strong></td><td>掉头</td><td>左转向灯全程常亮，禁止压路边线</td></tr>
+    </table>
+
+    <h3>⚠ 但 C1 和 C2 不一样：16 项 vs 15 项</h3>
+    <p style="margin-bottom:14px">上面 16 项是<b>小型汽车（C1 手动挡）</b>的考核内容。<b>小型自动挡汽车（C2）取消「加减挡位操作」</b>——自动变速箱由电脑换挡，学员无需手动操作离合与挡位，因此这一项自然不考。</p>
+    <div class="grid g2">
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">C1 手动挡 · <span style="color:var(--accent)">16 项</span></div>
+        <p style="font-size:13px">比 C2 多出 <b>加减挡位操作</b>。硬性要求：全程必须挂到四挡，车速 30~40km/h 以上并保持几秒（多地考场要求「次高挡保持 3 秒以上」）。</p>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">C2 自动挡 · <span style="color:var(--accent)">15 项</span></div>
+        <p style="font-size:13px">无加减挡，全程 D 挡行驶。但<b>难点并未消失，只是转移</b>：观察、转向灯、点刹、踏板习惯成为新的失分区。</p>
+      </div>
+    </div>
+    <div class="tip">
+      <b>这是一个必须做进产品的开关。</b>车型不只影响项目数（16 / 15），还决定了难点专项的内容完全不同。
+      因此首页第一屏就是 <b>C1 / C2 切换</b>，切换后线路项目数、项目清单、难点专项三处同步变化——
+      这就是原型里那个分段控件的作用。灯光模拟则两车型完全共用，不必重复做。
+    </div>
+
+    <h3>四条线路的项目序列</h3>
+    <p style="font-size:13.5px;margin-bottom:6px">下表为 <b>C1 手动挡（16 项）</b>序列。右列小圆点是该条数据的<b>核实来源</b>，这也是我们的数据纪律——<b>不编造，只标注</b>：</p>
+    <div class="legend" style="display:flex;gap:18px;font-size:12.5px;color:var(--dim);margin:12px 0 18px;flex-wrap:wrap">
+      <span><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc97;margin-right:6px"></i>公开实测攻略已核实</span>
+      <span><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4da3ff;margin-right:6px"></i>路线图上明确标注</span>
+      <span><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ffb454;margin-right:6px"></i>依结构推导，待教练校准</span>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <div style="color:var(--accent);font-weight:700;font-size:14px;margin-bottom:12px">1 号线</div>
+        <table><tr><th style="width:34px">#</th><th>项目</th><th style="width:52px">来源</th></tr>
+          <tr><td>1</td><td>上车准备</td><td>国标</td></tr>
+          <tr><td>2</td><td>模拟夜间灯光</td><td>国标</td></tr>
+          <tr><td>3</td><td>起步</td><td>国标</td></tr>
+          <tr><td>4</td><td>通过公共汽车站</td><td>图</td></tr>
+          <tr><td>5</td><td>通过学校区域</td><td>图</td></tr>
+          <tr><td>6</td><td>超车</td><td>图</td></tr>
+          <tr><td>7</td><td>变更车道</td><td>图</td></tr>
+          <tr><td>8</td><td>直线行驶</td><td>图</td></tr>
+          <tr><td>9</td><td>加减挡位操作</td><td>图</td></tr>
+          <tr><td>10</td><td>路口右转弯</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>11</td><td>直行通过路口</td><td>图</td></tr>
+          <tr><td>12</td><td>会车</td><td>图</td></tr>
+          <tr><td>13</td><td>掉头</td><td>图</td></tr>
+          <tr><td>14</td><td>路口左转弯</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>15</td><td>通过人行横道线</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>16</td><td>靠边停车</td><td>图</td></tr>
+        </table>
+      </div>
+
+      <div class="card" style="border-color:rgba(61,220,151,.45)">
+        <div style="color:var(--accent);font-weight:700;font-size:14px;margin-bottom:4px">2 号线 <span class="tag t-ok" style="margin-left:4px">已核实</span></div>
+        <p style="font-size:12px;color:var(--dim-2);margin-bottom:12px">唯一有公开实测全程记录的线路，16 步完整可查</p>
+        <table><tr><th style="width:34px">#</th><th>项目</th><th style="width:52px">来源</th></tr>
+          <tr><td>1</td><td>上车准备（绕车一周）</td><td>实测</td></tr>
+          <tr><td>2</td><td>模拟夜间灯光</td><td>实测</td></tr>
+          <tr><td>3</td><td>起步</td><td>实测</td></tr>
+          <tr><td>4</td><td>通过公共汽车站</td><td>实测</td></tr>
+          <tr><td>5</td><td>超车</td><td>实测</td></tr>
+          <tr><td>6</td><td>路口右转弯（第 1 次）</td><td>实测</td></tr>
+          <tr><td>7</td><td>直线行驶</td><td>实测</td></tr>
+          <tr><td>8</td><td>路口右转弯（第 2 次）</td><td>实测</td></tr>
+          <tr><td>9</td><td>掉头</td><td>实测</td></tr>
+          <tr><td>10</td><td>会车</td><td>实测</td></tr>
+          <tr><td>11</td><td>直行通过路口</td><td>实测</td></tr>
+          <tr><td>12</td><td>路口左转弯（第 1 次）</td><td>实测</td></tr>
+          <tr><td>13</td><td>加减挡位操作（40 码）</td><td>实测</td></tr>
+          <tr><td>14</td><td>路口左转弯（第 2 次）</td><td>实测</td></tr>
+          <tr><td>15</td><td>变更车道</td><td>实测</td></tr>
+          <tr><td>16</td><td>靠边停车</td><td>实测</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div style="color:var(--accent);font-weight:700;font-size:14px;margin-bottom:12px">4 号线①</div>
+        <table><tr><th style="width:34px">#</th><th>项目</th><th style="width:52px">来源</th></tr>
+          <tr><td>1</td><td>上车准备</td><td>国标</td></tr>
+          <tr><td>2</td><td>模拟夜间灯光</td><td>国标</td></tr>
+          <tr><td>3</td><td>起步</td><td>国标</td></tr>
+          <tr><td>4</td><td>通过公共汽车站</td><td>图</td></tr>
+          <tr><td>5</td><td>通过学校区域</td><td>图</td></tr>
+          <tr><td>6</td><td>变更车道</td><td>图</td></tr>
+          <tr><td>7</td><td>超车</td><td>图</td></tr>
+          <tr><td>8</td><td>路口右转弯</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>9</td><td>直线行驶</td><td>图</td></tr>
+          <tr><td>10</td><td>加减挡位操作</td><td>图</td></tr>
+          <tr><td>11</td><td>直行通过路口</td><td>图</td></tr>
+          <tr><td>12</td><td>会车</td><td>图</td></tr>
+          <tr><td>13</td><td>掉头</td><td>图</td></tr>
+          <tr><td>14</td><td>路口左转弯</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>15</td><td>通过人行横道线</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>16</td><td>靠边停车</td><td>图</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div style="color:var(--accent);font-weight:700;font-size:14px;margin-bottom:12px">4 号线②</div>
+        <table><tr><th style="width:34px">#</th><th>项目</th><th style="width:52px">来源</th></tr>
+          <tr><td>1</td><td>上车准备</td><td>国标</td></tr>
+          <tr><td>2</td><td>模拟夜间灯光</td><td>国标</td></tr>
+          <tr><td>3</td><td>起步</td><td>国标</td></tr>
+          <tr><td>4</td><td>通过公共汽车站</td><td>图</td></tr>
+          <tr><td>5</td><td>变更车道</td><td>图</td></tr>
+          <tr><td>6</td><td>超车</td><td>图</td></tr>
+          <tr><td>7</td><td>路口右转弯</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>8</td><td>直线行驶</td><td>图</td></tr>
+          <tr><td>9</td><td>加减挡位操作</td><td>图</td></tr>
+          <tr><td>10</td><td>直行通过路口</td><td>图</td></tr>
+          <tr><td>11</td><td>会车</td><td>图</td></tr>
+          <tr><td>12</td><td>掉头</td><td>图</td></tr>
+          <tr><td>13</td><td>路口左转弯</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>14</td><td>通过人行横道线</td><td style="color:var(--warn)">推导</td></tr>
+          <tr><td>15</td><td>通过学校区域</td><td>图</td></tr>
+          <tr><td>16</td><td>靠边停车</td><td>图</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:10px">4 号线①② 的真实差异</h4>
+        <p style="font-size:13px">两者项目集合相同、方向相同，差别在<b>路段次序</b>：① 的<b>通过学校区域</b>排在很前面（第 5 位）；② 排到靠边停车之前（第 15 位）。② 的<b>超车</b>也更早。这正是「跨线路混合模式」要考的重点。</p>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:10px">考场线路关系（公开资料）</h4>
+        <p style="font-size:13px">考场共 4 条线路，其中 <b>3 号线与 4 号线路线一致（同方向）</b>，<b>2 号线与 1 号线方向相反</b>。所以真正需要分别记忆的「方向 + 次序」组合是 <b>2 套</b>，而不是 4 套——这本身就是可以讲给用户的价值点。</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>仍需教练确认的 4 件事：</b>
+      ① 1 号线与 4 号线中标注「推导」的 <b>路口右转弯 / 路口左转弯 / 通过人行横道线</b> 三项，在图上没有独立标注，位置是我按路线结构推的；
+      ② <b>2 号线的公开实测记录里没有出现「通过学校区域」和「通过人行横道线」</b>，需要确认这两条线上是否真的不考，还是攻略漏记；
+      ③ 各条线的<b>掉头次数、左右转次数</b>是否与上表一致；
+      ④ <b>C2 的替代动作</b>——2 号线实测记录里有一项「40 码」（加速到 40 后回落到 20~30），自动挡没有换挡动作，需确认它在 C2 的考核项里是并入「直线行驶」，还是单独计一项。
+      这四条确认完，数据即可定稿。
+    </div>
+
+    <h3>数据模型</h3>
+    <pre><span class="c">// 一条线路 = 官方 16 项的一个有序排列</span>
+<span class="k">Route</span> {
+  id, name,            <span class="c">// "l1" / "苏州科技城1号线"</span>
+  cover,               <span class="c">// 路线图（云存储 URL）</span>
+  nodes: <span class="k">Node</span>[]        <span class="c">// 长度恒为 16</span>
+}
+
+<span class="k">Node</span> {
+  id, routeId, seq,    <span class="c">// seq 决定正确顺序 —— 数据驱动，改数据不改代码</span>
+  type,                <span class="c">// 官方 16 项枚举，见下</span>
+  source,              <span class="c">// 'std'|'pub'|'map'|'inf'  ← 数据核实来源，不编造</span>
+  position: {x, y},    <span class="c">// 路线图百分比坐标 → 地图题用</span>
+  voice,               <span class="c">// 语音播报文本</span>
+  tips,                <span class="c">// 操作要点</span>
+  pitfall              <span class="c">// 扣分点 / 易错</span>
+}
+
+<span class="c">// 官方 16 项（公安部令第 162 号 第三十四条）</span>
+<span class="f">NodeType</span> = 上车准备 | 模拟夜间灯光 | 起步 | 直线行驶
+         | 加减挡位操作 | 变更车道 | 靠边停车 | 直行通过路口
+         | 路口左转弯 | 路口右转弯 | 通过人行横道线
+         | 通过学校区域 | 通过公共汽车站 | 会车 | 超车 | 掉头</pre>
+    <div class="tip">
+      <b>两条设计原则</b>：①<b>顺序即数据</b>——<code style="color:#78bcff">seq</code> 是顺序的唯一事实来源，教练调顺序只改数据；
+      ②<b>来源可追溯</b>——每个节点都带 <code style="color:#78bcff">source</code>，UI 上以圆点可视化。学员看得见「哪些是已经确认的」，我们也能一眼筛出待核项。这比假装数据全对要安全得多。
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <h2><span class="n">05</span>灯光模拟题库（12 组标准场景）</h2>
+    <div class="h2sub">通用模块，四条线路共享，是性价比最高的先做项</div>
+    <table>
+      <tr><th style="width:44%">语音播报场景</th><th>正确操作</th><th style="width:16%">难度</th></tr>
+      <tr><td>请开启前照灯</td><td><strong>近光灯</strong></td><td><span class="tag t-p0">基础</span></td></tr>
+      <tr><td>夜间在没有路灯、照明不良条件下行驶</td><td><strong>远光灯</strong></td><td><span class="tag t-p0">基础</span></td></tr>
+      <tr><td>夜间同方向近距离跟车行驶</td><td><strong>近光灯</strong></td><td><span class="tag t-p1">易错</span></td></tr>
+      <tr><td>夜间与机动车会车</td><td><strong>近光灯</strong></td><td><span class="tag t-p1">易错</span></td></tr>
+      <tr><td>夜间通过急弯、坡路、拱桥、人行横道</td><td><strong>远近光交替</strong></td><td><span class="tag t-p1">易错</span></td></tr>
+      <tr><td>夜间通过没有交通信号灯控制的路口</td><td><strong>远近光交替</strong></td><td><span class="tag t-p1">易错</span></td></tr>
+      <tr><td>夜间超越前方车辆</td><td><strong>远近光交替</strong></td><td><span class="tag t-p1">易错</span></td></tr>
+      <tr><td>夜间通过有交通信号灯控制的路口</td><td><strong>近光灯</strong></td><td><span class="tag t-p1">易错</span></td></tr>
+      <tr><td>雾天行驶</td><td><strong>雾灯 + 危险报警闪光灯</strong></td><td><span class="tag t-p0">高危</span></td></tr>
+      <tr><td>夜间在道路上发生故障，妨碍交通又难以移动</td><td><strong>示宽灯 + 危险报警闪光灯</strong></td><td><span class="tag t-p0">高危</span></td></tr>
+      <tr><td>夜间在路边临时停车</td><td><strong>示宽灯 + 危险报警闪光灯</strong></td><td><span class="tag t-p0">高危</span></td></tr>
+      <tr><td>模拟夜间考试完成，请关闭所有灯光</td><td><strong>关闭所有灯光</strong></td><td><span class="tag t-ok">送分</span></td></tr>
+    </table>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <h2><span class="n">06</span>技术选型与架构</h2>
+    <div class="h2sub">零运维起步，把精力全放在内容与交互上</div>
+    <div class="grid g3">
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:8px">前端</h4>
+        <p style="font-size:13px">微信小程序<b>原生</b>（WXML/WXSS/JS）即可。<br>排序交互用 <code style="color:#78bcff">view</code> + 点击点选（比拖拽在手机上更稳、误触更少）。<br>若想兼顾抖音/支付宝小程序，再用 Taro 重写，MVP 阶段不建议。</p>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:8px">后端</h4>
+        <p style="font-size:13px"><b>微信云开发 CloudBase</b>（强烈推荐）<br>· 云数据库：线路 / 题目 / 用户进度<br>· 云存储：路线图、语音音频<br>· 云函数：判分、统计<br>无需服务器、无需备案独立域名，个人主体也能上线。</p>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:8px">语音播报</h4>
+        <p style="font-size:13px"><code style="color:#78bcff">innerAudioContext</code> 播放<b>预置音频</b>（教练录 or TTS 合成后上传云存储）。<br>避免实时 TTS，一是小程序端限制多，二是真实考试就是固定播报，预置音频还原度更高。</p>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:8px">页面结构</h4>
+        <pre style="margin:0;font-size:12px">pages/
+  index/        首页 · 车型切换 + 线路列表
+  order/        顺序排序题（整条线路一次排完）
+  special/      难点专项 · 列表
+  specialPlay/  难点专项 · 做题（排序 / 单选）
+  lights/       灯光模拟
+  scan/         项目速查（时间轴）
+  mistakes/     错题本
+  profile/      我的 · 掌握度</pre>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:8px">云数据库集合</h4>
+        <pre style="margin:0;font-size:12px">routes       线路 + 节点序列
+             （节点带 model 字段区分 c1/c2）
+special      难点专项题库（按车型分组）
+lightQuiz    灯光场景题库
+userProgress 用户掌握度 / 错题
+userStats    练习记录</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section>
+    <h2><span class="n">07</span>迭代路线与优先级</h2>
+    <div class="h2sub">先跑通「一条线路的顺序题」，再横向铺开</div>
+    <table>
+      <tr><th style="width:12%">阶段</th><th style="width:34%">交付内容</th><th>说明</th><th style="width:12%">优先级</th></tr>
+      <tr>
+        <td><strong>P0</strong><br><span style="font-size:12px;color:var(--dim-2)">MVP</span></td>
+        <td>· 首页 + <b>C1 / C2 车型切换</b><br>· 4 条线路数据录入（C1 16 项 / C2 15 项）<br>· 顺序排序题（<b>整条线路一次排完</b> + 判分对照）<br>· <b>难点专项</b>（每车型 6 个）<br>· 灯光模拟<br>· 错题本</td>
+        <td>跑通主链路即可上线试水：够用来验证「学员愿不愿意每天刷 5 分钟」。<b>车型开关必须放 P0</b>——它决定项目数和专项内容，后补等于数据返工。</td>
+        <td><span class="tag t-p0">必做</span></td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>· 情境判断题<br>· 跨线路混合模式<br>· 掌握度统计<br>· 路线速查（地图 + 时间轴）</td>
+        <td>顺序题验证完后补「空间感」和「区分能力」，产品体验开始完整。</td>
+        <td><span class="tag t-p1">核心</span></td>
+      </tr>
+      <tr>
+        <td><strong>P2</strong></td>
+        <td>· 整场模拟考试<br>· 语音播报<br>· 地图定位题<br>· 分享 / 排行 / 打卡</td>
+        <td>考试临场感 + 社交裂变。到这一步才需要认真考虑推广。</td>
+        <td><span class="tag t-p2">增强</span></td>
+      </tr>
+      <tr>
+        <td><strong>P3</strong></td>
+        <td>· 教练端内容管理（增删线路/改顺序）<br>· 多考场扩展</td>
+        <td>决定产品能否规模化：从「一个考场的小工具」变成「可复制的平台」。</td>
+        <td><span class="tag t-p2">远期</span></td>
+      </tr>
+    </table>
+    <div class="tip">
+      <b>最短验证路径：</b>先只做 2 号线一条线路 + 顺序题 + 灯光题，找 3~5 个正在备考的学员试用。如果他们愿意连玩三天，方向即成立，再投入做其余线路。
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section>
+    <h2><span class="n">08</span>风险与关键决策</h2>
+    <table>
+      <tr><th style="width:24%">风险 / 决策点</th><th>说明与建议</th></tr>
+      <tr><td><strong>路线数据准确性</strong><br><span class="tag t-p0">最高风险</span></td><td>数据错一条，用户考挂一次就会永久流失。已采取的防线：① 数据全部依<b>公安部令第 162 号</b>的官方 16 项建骨架，杜绝「凭空造项目」；② 每个节点带 <code style="color:#78bcff">source</code> 标记，公开实测 / 图上标注 / 结构推导三类区分开，UI 上以圆点可视化；③ 上线前必须由教练按附录清单逐项打勾定稿。</td></tr>
+      <tr><td><strong>图片版权</strong></td><td>你提供的路线图出自公众号「小朵米蒋教练」。商用前需取得授权，或<b>按同样拓扑自己重绘</b>（推荐，也顺便统一视觉风格）。</td></tr>
+      <tr><td><strong>小程序审核类目</strong></td><td>「驾考」类内容建议选<b>教育 / 培训</b>相关类目；个人主体可选类目有限，若走企业主体更顺。避免使用「保过」「包过」等违规表述。</td></tr>
+      <tr><td><strong>内容维护成本</strong></td><td>考场路线会调整。把顺序做成数据（而非硬编码），并尽早做教练端，否则每次变更都要找开发改代码。</td></tr>
+      <tr><td><strong>是否收费</strong></td><td>建议 MVP 全免费跑口碑。变现路径：全线路解锁（几元）或与教练/驾校合作推广，不要一上来就收。</td></tr>
+    </table>
+  </section>
+
+  <!-- 9 -->
+  <section>
+    <h2><span class="n">09</span>附录 · 教练校准清单</h2>
+    <div class="h2sub">不用从零填表。官方 16 项已经排好，教练只需对每项打勾或改序号</div>
+    <p style="font-size:13.5px;margin-bottom:14px">用法：把每条线路的 16 项<b>正确顺序号</b>填进最后一列；如果某项该线路不考，写「—」。修正后即为可直接录入数据库的最终数据。</p>
+    <table>
+      <tr><th style="width:26%">官方项目</th><th style="width:52%">该项在本线路的注意点 / 播报位置</th><th style="width:22%">正确顺序号</th></tr>
+      <tr><td><strong>上车准备</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>模拟夜间灯光</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>起步</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>直线行驶</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>加减挡位操作</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>变更车道</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>直行通过路口</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>路口左转弯</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>路口右转弯</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>通过人行横道线</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>通过学校区域</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>通过公共汽车站</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>会车</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>超车</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>掉头</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td><strong>靠边停车</strong></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    </table>
+    <p style="margin-top:14px;font-size:13px">× 4 条线路各一份。填完后节点顺序、语音文本、要点提示即可一次性录入，随后所有题型（顺序/情境/地图/混合）都从这一份数据自动生成。</p>
+  </section>
+
+  <!-- 10 -->
+  <section>
+    <h2><span class="n">10</span>上线前置条件 · 需要你去开通什么</h2>
+    <div class="h2sub">结论：真正必须办的只有 3 件，其余都不用买</div>
+
+    <div class="tip" style="margin-top:0">
+      <b>先说结论，省得你去比价买服务器：</b>本方案走的是「小程序原生 + 微信云开发」，
+      所以<b>不需要买服务器、不需要买域名、不需要 HTTPS 证书、不需要做域名 ICP 备案</b>（注意：域名备案和小程序备案是两件事）。
+      真正要你去开通的只有三件：<b>① 注册小程序账号　② 提交小程序备案　③ 开通云开发环境</b>。
+    </div>
+
+    <h3>① 必须办（3 件）</h3>
+    <table>
+      <tr><th style="width:20%">要办的</th><th style="width:16%">在哪办</th><th>说明</th><th style="width:14%">耗时 / 费用</th></tr>
+      <tr>
+        <td><strong>小程序账号</strong></td>
+        <td>微信公众平台<br><span style="font-size:11.5px;color:var(--dim-2)">mp.weixin.qq.com</span></td>
+        <td>
+          <b>材料：</b>① 一个<b>从未注册过公众号/小程序、也没绑定过公众平台</b>的邮箱（这是最常见的卡点，QQ 邮箱也行，但必须是干净的）；② 管理员身份证 + 已实名并绑卡的微信号；③ 手机号。
+        </td>
+        <td>当天完成<br><span class="tag t-ok">个人免费</span></td>
+      </tr>
+      <tr>
+        <td><strong>小程序备案</strong><br><span class="tag t-p0">最大时间黑洞</span></td>
+        <td>小程序后台 →「备案」</td>
+        <td>
+          2023 年 9 月起<b>所有小程序必须备案才能发布</b>。流程：填资料 → 微信初审 → 工信部短信核验（<b>12381，24 小时内必须回</b>）→ 管局终审。<br>
+          <b>备案期间可以正常开发，只是不能正式发布。</b>个人备案需额外准备<b>纯白底免冠核验照</b>。
+        </td>
+        <td><b>7–20 个工作日</b><br>（1–3 周）<br><span class="tag t-ok">免费</span></td>
+      </tr>
+      <tr>
+        <td><strong>云开发环境</strong></td>
+        <td>微信开发者工具内<br>或腾讯云 CloudBase</td>
+        <td>
+          数据库 / 存储 / 云函数全在这里。<br>
+          <b style="color:var(--warn)">⚠ 政策已变：</b>自 <b>2026-01-16</b> 起改为「每个账号用<b>一次性兑换码</b>创建 1 个免费体验环境」，免费环境给 <b>3000 点/月</b>资源点，单次可续 6 个月。<br>
+          <b style="color:var(--warn)">⚠ 关键：小程序发布后，免费环境到期时间变为「上线后第 15 天」</b>，到期进入停服隔离，未转付费会<b>销毁环境、数据无法找回</b>。
+        </td>
+        <td>当天开通<br>开发期 <span class="tag t-ok">免费</span></td>
+      </tr>
+    </table>
+
+    <h3>② 按需开通（P0 阶段一个都不需要）</h3>
+    <table>
+      <tr><th style="width:24%">服务</th><th>什么时候需要</th><th style="width:26%">在哪办 / 成本</th></tr>
+      <tr><td><strong>腾讯位置服务</strong></td><td>做「地图定位题」时（P2）。P0 的排序题和灯光题都用不到地图。</td><td>腾讯位置服务申请 Key，个人可申请，有免费额度</td></tr>
+      <tr><td><strong>语音合成（TTS）</strong></td><td>只有当教练不录音、你又想要标准播报音时才需要。P0–P1 建议<b>先让教练录</b>，成本为 0。</td><td>腾讯云语音合成 / 讯飞，均有免费额度；或微信「同声传译」插件</td></tr>
+      <tr><td><strong>微信支付商户号</strong></td><td>只有要收费（全线路解锁）时才需要。<b>个人主体开不了</b>，需个体工商户或企业 + 营业执照。</td><td>微信支付商户平台；费率约 0.2%–0.6%</td></tr>
+      <tr><td><strong>微信认证</strong></td><td>个人主体<b>不需要</b>也不建议办（没收益）。企业主体才需要，300 元/年。</td><td>小程序后台 → 微信认证</td></tr>
+    </table>
+
+    <h3>③ 明确不用办（别花冤枉钱）</h3>
+    <table>
+      <tr><th style="width:26%">不用买的</th><th>原因</th></tr>
+      <tr><td><strong>服务器 / 云主机</strong></td><td>云开发包了计算资源，云函数即后端。省下 600–3000 元/年。</td></tr>
+      <tr><td><strong>域名</strong></td><td>云开发的调用不需要配服务器域名，也没有「域名已备案 + HTTPS」那套要求。</td></tr>
+      <tr><td><strong>HTTPS 证书</strong></td><td>同上，没有自建域名就没有证书需求。</td></tr>
+      <tr><td><strong>域名 ICP 备案</strong></td><td><b>容易搞混：</b>域名备案 ≠ 小程序备案。你没有域名，所以只做小程序备案即可。</td></tr>
+      <tr><td><strong>短信服务</strong></td><td>用微信登录拿 openid 即可，不需要手机号验证码（个人主体也拿不到手机号接口）。</td></tr>
+      <tr><td><strong>ICP 经营许可证 / EDI</strong></td><td>那些是「平台型、多商户入驻、交易撮合」才要的。我们不做交易、不做入驻，不需要。</td></tr>
+    </table>
+
+    <h3>④ 关键决策：主体选「个人」还是「个体工商户 / 企业」</h3>
+    <p style="margin-bottom:10px">这个决定要在<b>注册账号之前</b>定，因为主体类型一旦确定，后面很多能力就锁死了。</p>
+    <div class="grid g2">
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">个人主体 · <span style="color:var(--accent)">推荐用于 MVP</span></div>
+        <p style="font-size:13px"><b>能做的：</b>注册免费、无需 300 元认证、可做查询/工具/信息展示类功能。<br>
+        <b>不能做的：</b>微信支付、获取用户手机号、加载外链 H5、直播、附近的小程序、开通流量主（广告）。<br>
+        <b>对我们的影响：</b><b>几乎没有</b>——MVP 全免费、用微信登录、不接支付、不做 UGC。<br>
+        <b>名额：</b>同一身份证最多备案 5 个小程序。</p>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">个体工商户 · <span style="color:var(--accent-2)">要收费时再升级</span></div>
+        <p style="font-size:13px"><b>优势：</b>可以开通微信支付、可选的类目更宽、支持经营者本人银行卡做主体验证（不强制对公账户）。<br>
+        <b>成本：</b>办执照有一定成本，微信认证 300 元/年。<br>
+        <b>什么时候切：</b>当你要做「全线路付费解锁」或与驾校合作推广时。<br>
+        <b>迁移代价：</b>小程序主体可以变更，但流程较麻烦，所以<b>如果要收费，建议一开始就用个体工商户注册</b>。</p>
+      </div>
+    </div>
+
+    <h3>⑤ 服务类目怎么选（最容易卡住的一步）</h3>
+    <div class="note" style="margin-top:0">
+      <b>为什么这步危险：</b>类目选错会直接驳回，而且选错类目后「嵌套高门槛功能」属于违规。个人主体能选的范围很窄。
+      <b>更要注意：</b>「教育」类目对个人主体有额外门槛——「在线教育」类目需要提供<b>个人教师资格证或与持证机构的合作证明</b>；
+      「教育信息展示」类目则<b>不支持</b>教育视频播放、直播和课程售卖。
+    </div>
+    <table>
+      <tr><th style="width:22%">建议方案</th><th>理由</th><th style="width:22%">风险</th></tr>
+      <tr>
+        <td><b>方案 A（首选）</b><br>工具 →<br>效率工具 / 信息查询</td>
+        <td>我们的产品本质是「按线路做的记忆训练 + 顺序自测工具」，不是培训机构、不卖课、不直播、不做 UGC。这最贴近真实业务。</td>
+        <td>审核员可能认为内容属于教育范畴而要求改类目。</td>
+      </tr>
+      <tr>
+        <td><b>方案 B（备选）</b><br>教育 →<br>教育信息展示</td>
+        <td>类目名更贴合「驾考学习」的直觉。个人主体可选，且不需要教师资格证（区别于「在线教育」）。</td>
+        <td>该子类目<b>不能有视频播放和课程售卖</b>——如果我们日后想加教学视频，会被卡住。</td>
+      </tr>
+      <tr>
+        <td><b>产品红线（无论选哪个）</b></td>
+        <td colspan="2">不要出现「保过」「包过」「押题」等表述；不要做用户上传/评论/发帖（UGC 属社交类目，个人主体选不了）；不要出现任何购买按钮。</td>
+      </tr>
+    </table>
+
+    <h3>⑥ 建议的时间线（备案与开发并行）</h3>
+    <div class="flow">
+      <div class="fstep"><b>第 1 天</b><span>注册小程序账号 → 完善名称/头像/简介 → <b>当天就提交备案</b></span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>第 1–3 周</b><span>备案在走流程，<b>同时</b>开通云开发、写代码、内部体验版测试</span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>备案通过后</b><span>上传代码 → 提交审核（1–7 工作日）→ 发布</span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>上线后 15 天内</b><span>把云开发转成付费套餐，<b>否则环境会被销毁</b></span></div>
+    </div>
+    <div class="tip">
+      <b>最重要的一条排期纪律：</b>备案是 1–3 周，开发和它没关系。<b>第 1 天就去提交备案</b>，别等代码写完才想起来——那样会白白多等三周。
+    </div>
+
+    <h3>⑦ 费用总览</h3>
+    <table>
+      <tr><th style="width:30%">阶段</th><th style="width:34%">支出项</th><th>金额</th></tr>
+      <tr><td><strong>开发 + 内测</strong></td><td>小程序账号（个人）+ 云开发免费环境 + 教练录音</td><td><b style="color:var(--accent)">0 元</b></td></tr>
+      <tr><td><strong>刚上线</strong></td><td>云开发转付费套餐（个人版量级）</td><td>约 <b>20–40 元/月</b></td></tr>
+      <tr><td><strong>要收费时</strong></td><td>+ 个体工商户主体升级 + 微信认证 + 支付商户号</td><td>认证约 300 元/年，支付费率 0.2%–0.6%</td></tr>
+      <tr><td><strong>量级参考</strong></td><td>云开发按资源点计费，1000 点 ≈ 1 元。免费环境 3000 点/月，大约够 <b>100 名日活学员</b>的练习量。</td><td>超过再按量付费</td></tr>
+    </table>
+
+    <h3>⑧ 最容易踩的 4 个坑</h3>
+    <table>
+      <tr><th style="width:30%">坑</th><th>怎么避</th></tr>
+      <tr><td><strong>邮箱已被占用</strong></td><td>注册用的邮箱必须从未注册过公众号/小程序、也从未绑定过公众平台。别用自己常用的工作邮箱去试，先确认干净。</td></tr>
+      <tr><td><strong>备案短信超时</strong></td><td>工信部 12381 的核验短信要求 <b>24 小时内</b>完成验证，超时直接驳回重来。交完备案那两天留意手机。</td></tr>
+      <tr><td><strong>上线后忘了转付费</strong></td><td>上线后第 15 天免费环境到期 → 停服隔离 → <b>7 天后销毁，数据不可找回</b>。上线当天就设个日历提醒。</td></tr>
+      <tr><td><strong>类目与实际功能不符</strong></td><td>提审前自查：页面上有没有购买按钮、有没有用户发布内容、有没有视频播放。有的话要么删掉、要么换类目。</td></tr>
+    </table>
+  </section>
+
+  <!-- 11 -->
+  <section>
+    <h2><span class="n">11</span>载体选型：小程序 vs HTML 单页应用</h2>
+    <div class="h2sub">能不能做？能——而且你现在这个原型本身就是</div>
+
+    <div class="tip" style="margin-top:0">
+      <b>先澄清一个事实：</b>当前的 <code style="color:#78bcff">prototype/index.html</code> <b>已经是一个 HTML 单页应用</b>——
+      单文件、零依赖、零后端、手机上直接能跑。所以问题不是「能不能做」，而是
+      <b>「现阶段该先用哪个载体」</b>。我的建议是：<b>先用 HTML 单页应用上线，验证通过后再做小程序</b>。
+    </div>
+
+    <h3>一、这个产品天然适合 HTML SPA</h3>
+    <table>
+      <tr><th style="width:36%">判断条件</th><th style="width:12%">是否符合</th><th>说明</th></tr>
+      <tr><td>纯前端逻辑，无复杂后端</td><td><span class="tag t-ok">符合</span></td><td>题库是静态数据，判分是纯计算，MVP 阶段连服务器都不需要</td></tr>
+      <tr><td>不依赖微信原生能力</td><td><span class="tag t-ok">符合</span></td><td>不用支付、不用登录、不用蓝牙/扫码/手机号——这些恰好也是个人主体拿不到的</td></tr>
+      <tr><td>内容静态、数据量小</td><td><span class="tag t-ok">符合</span></td><td>4 条线路 × 16 项 + 12 组灯光题，整包不到 100KB</td></tr>
+      <tr><td>碎片时间高频短时使用</td><td><span class="tag t-ok">符合</span></td><td>「刷 5 分钟」正是网页的长处：不用装、不用找</td></tr>
+      <tr><td>不做 UGC</td><td><span class="tag t-ok">符合</span></td><td>没有发帖/评论，不需要内容审核体系</td></tr>
+      <tr><td>需要微信内主动触达用户</td><td><span class="tag t-p0">不符合</span></td><td>订阅消息推送是网页做不到的——如果你要靠推送做复访，这条会把你推回小程序</td></tr>
+    </table>
+    <p style="font-size:13px;margin-top:12px">6 条中 5 条符合、1 条权衡。<b>说明这个产品用 HTML SPA 承载是成立的。</b></p>
+
+    <h3>二、两个载体的对比</h3>
+    <table>
+      <tr><th style="width:16%">维度</th><th style="width:42%">HTML 单页应用</th><th>微信小程序</th></tr>
+      <tr><td><strong>上线速度</strong></td><td><b style="color:var(--accent)">当天</b>（传文件即上线）</td><td>1–3 周（备案 7–20 工作日 + 审核 1–7 天）</td></tr>
+      <tr><td><strong>现金成本</strong></td><td><b style="color:var(--accent)">0 元</b>（免备案静态托管）</td><td>0 元（个人主体），但云开发上线后要转付费</td></tr>
+      <tr><td><strong>迭代速度</strong></td><td><b style="color:var(--accent)">改完即生效</b></td><td>每次都要重新提审，1–7 天</td></tr>
+      <tr><td><strong>微信内体验</strong></td><td>会有「<b>非微信官方网页，请确认是否继续访问</b>」提示，点继续可进</td><td><b style="color:var(--accent)">原生体验，无任何提示</b></td></tr>
+      <tr><td><strong>分享形态</strong></td><td>蓝色链接 + 可能的风险提示</td><td>绿色卡片，带图标和标题，点开率高</td></tr>
+      <tr><td><strong>复访入口</strong></td><td>要用户收藏或记住链接，<b>容易丢</b></td><td>「最近使用的小程序」下拉列表，天然入口</td></tr>
+      <tr><td><strong>自然流量</strong></td><td>无，只能靠主动分发</td><td>微信内可被搜到</td></tr>
+      <tr><td><strong>主动推送</strong></td><td>做不到</td><td>订阅消息（需用户逐次授权）</td></tr>
+      <tr><td><strong>合规风险</strong></td><td>低。无类目审核、无资质要求</td><td>有。<b>类目选错直接驳回</b>，「保过」等表述是红线</td></tr>
+      <tr><td><strong>跨平台</strong></td><td><b style="color:var(--accent)">iOS / Android / PC 全通吃</b>，还能做成 PWA 加到桌面</td><td>仅微信内</td></tr>
+      <tr><td><strong>进度存储</strong></td><td>localStorage（换设备/清缓存会丢），跨设备需自建后端</td><td>云数据库，天然跨设备</td></tr>
+    </table>
+
+    <h3>三、选 HTML SPA 的充分条件（这 6 条都满足，方案才成立）</h3>
+    <table>
+      <tr><th style="width:26%">前提条件</th><th>怎么满足 / 注意什么</th></tr>
+      <tr><td><strong>① 必须是 HTTPS</strong><br><span class="tag t-p0">硬性</span></td><td>微信<b>直接用 http 会拦截</b>，没有任何商量余地。所有下面的托管方案都自带 HTTPS，不要自己折腾证书。</td></tr>
+      <tr><td><strong>② 要有分发渠道</strong><br><span class="tag t-p0">最关键</span></td><td>网页<b>没有自然流量</b>，没人会搜到你。你必须能自己把人拉过来：教练的学员群、驾校的二维码、朋友圈。这一条不成立，网页做得再好也没人用——<b>这是整个方案里最容易被忽略、却最致命的前提</b>。</td></tr>
+      <tr><td><strong>③ 接受「非官方网页」提示</strong></td><td>微信对第三方网页会提示「非微信官方网页，请确认是否继续访问」。用户点「继续」就能进，<b>但会掉一部分转化</b>。这是网页在微信内的固有代价，无法彻底消除。</td></tr>
+      <tr><td><strong>④ 进度本地存</strong></td><td>用 localStorage 存错题本和掌握度，免后端。代价：换手机或清缓存会丢。想跨设备同步才需要后端。</td></tr>
+      <tr><td><strong>⑤ iOS 音频要手势触发</strong></td><td>iOS 禁止音频自动播放。语音播报必须先让用户点一下（比如「开始练习」按钮），否则静音。小程序里也有类似限制，但网页更严格。</td></tr>
+      <tr><td><strong>⑥ 想清楚传播文案</strong></td><td>网页分享出去是光秃秃的链接，没有卡片图。<b>标题和摘要要写得能自证价值</b>，否则点开率远低于小程序卡片。</td></tr>
+    </table>
+
+    <h3>四、什么时候必须回到小程序（任一命中就该切）</h3>
+    <table>
+      <tr><th style="width:30%">触发条件</th><th>为什么网页做不到</th></tr>
+      <tr><td><strong>要做付费解锁</strong></td><td>网页收款需要接入支付渠道，且个人难以合规收款。小程序有微信支付（需个体工商户/企业主体）。</td></tr>
+      <tr><td><strong>要做用户体系</strong></td><td>手机号、微信身份、跨设备进度同步，网页端都得自建后端 + 短信，成本陡增。</td></tr>
+      <tr><td><strong>要靠推送拉复访</strong></td><td>「该练车了」这类主动触达，网页完全没有手段。</td></tr>
+      <tr><td><strong>要靠搜索拿自然流量</strong></td><td>微信内搜「科目三」搜不到网页，但可能搜到小程序。</td></tr>
+      <tr><td><strong>「非官方网页」提示伤到转化</strong></td><td>如果实测发现大量用户在提示页就流失了，说明这个载体撑不住。</td></tr>
+    </table>
+
+    <h3>五、免备案静态托管方案对比</h3>
+    <p style="font-size:13.5px;margin-bottom:6px">网页要上线必须有地方放。<b>这几家都免备案</b>，但国内访问速度差别很大：</p>
+    <table>
+      <tr><th style="width:22%">平台</th><th style="width:14%">国内速度</th><th>说明</th></tr>
+      <tr>
+        <td><strong>腾讯云 CloudBase<br>静态网站托管</strong><br><span class="tag t-ok">首选</span></td>
+        <td><b style="color:var(--accent)">极快</b></td>
+        <td><b>免备案</b>，默认域名形如 <code style="color:#78bcff">xxx.service.tcloudbase.com</code> 可直接分享。国内 CDN 节点，且域名是腾讯的，<b>在微信内的信任度天然更高</b>。免费额度够用。<br>
+        <b>和云开发是同一套</b>——好处是：万一之后转小程序，环境、数据、托管都不用搬。</td>
+      </tr>
+      <tr>
+        <td><strong>Cloudflare Pages</strong></td>
+        <td>较好<br><span style="font-size:11.5px;color:var(--dim-2)">150–300ms，偶有波动</span></td>
+        <td>免备案、无限带宽、10GB 存储、自带 HTTPS。海外免费方案里国内最稳的一个。<b>但 Cloudflare 的大陆节点只对 Enterprise 开放</b>，普通用户享受不到。</td>
+      </tr>
+      <tr>
+        <td><strong>Netlify</strong></td>
+        <td>中等</td><td>免备案，100GB/月带宽。国内速度比 Cloudflare 略慢。</td>
+      </tr>
+      <tr>
+        <td><strong>Vercel</strong><br><span class="tag t-p0">不推荐</span></td>
+        <td style="color:var(--red)">基本打不开</td>
+        <td><b style="color:var(--red)">官方明确不面向中国大陆</b>，<code style="color:#78bcff">vercel.app</code> 在国内经常超时。做海外作品集可以，做国内用户的产品别选。</td>
+      </tr>
+      <tr>
+        <td><strong>Gitee Pages</strong></td>
+        <td>极快</td><td>国内节点。但<b>不支持 SPA 路由</b>，私有仓库要付费。适合纯静态文档，不适合应用。</td>
+      </tr>
+      <tr>
+        <td><strong>阿里云 OSS</strong></td>
+        <td>极快</td><td>用<b>默认域名</b>免备案，绑自定义域名就要备案。静态网站托管需在控制台把 404 指向 index.html，配置略繁琐。</td>
+      </tr>
+    </table>
+
+    <h3>六、推荐路线：先 SPA，后小程序</h3>
+    <div class="flow">
+      <div class="fstep"><b>阶段 1 · 今天</b><span>把现有原型补上 localStorage 存进度 → 传到 CloudBase 静态托管 → <b>拿到可分享链接</b></span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>阶段 2 · 一周内</b><span>给 3–5 个正在备考的学员用，看他们<b>会不会连刷三天</b></span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>阶段 3 · 验证通过后</b><span>再启动小程序：注册 + 备案 + 云开发</span></div>
+      <div class="arrow">→</div>
+      <div class="fstep"><b>阶段 4</b><span>数据模型与交互逻辑<b> 100% 复用</b>，只是换一层壳</span></div>
+    </div>
+
+    <div class="tip">
+      <b>为什么建议这个顺序：</b>产品最该验证的假设是「<b>学员愿不愿意每天刷 5 分钟</b>」——这件事<b>跟载体无关</b>。
+      而小程序路线要先付 <b>1–3 周备案 + 1–7 天审核 + 类目被驳回的风险</b>。
+      先用网页花<b>一天</b>把这个假设验掉，是明显更划算的顺序。验证不成立，你省下了三周和一堆资质麻烦；验证成立，小程序的钱和时间都花在确定的事情上。
+    </div>
+
+    <div class="note">
+      <b>一句话总结：</b>HTML SPA 不是「退而求其次」，而是<b>这个阶段最合理的载体</b>。
+      它的短板（无推送、无自然流量、有风险提示）在 MVP 阶段都还不构成致命伤；
+      而它的长处（当天上线、零成本、改完即生效、跨平台）恰好是验证期最需要的。
+    </div>
+
+    <div class="tip">
+      <b>落地细节见另一份文档：</b>《<b>Cloudflare 部署与协作指南</b>》——
+      里面有 Pages 部署的具体配置、教练改数据的傻瓜流程、PR 预览协作法、上线后的维护清单。
+      <b>本项目已按「应用外壳 + 数据文件」两层重构</b>：
+      交互逻辑在 <code style="color:#78bcff">prototype/index.html</code>，
+      内容在 <code style="color:#78bcff">prototype/data/</code> 下的 4 个文件里，改内容不必碰代码。
+    </div>
+  </section>
+
+  <footer>
+    科三路线通 · 苏州科技城 ｜ 小程序产品规划方案 v1.1 ｜ 更新于 2026-10-09
+  </footer>
+</div>
+</body>
+</html>

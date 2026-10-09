@@ -1,0 +1,19 @@
+# ---- 工作区记忆与内部笔记（含策略讨论，不公开）----
+.workbuddy/
+
+# ---- 系统文件 ----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# ---- 编辑器 / IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---- 本地临时文件 ----
+*.log
+*.tmp
+node_modules/
