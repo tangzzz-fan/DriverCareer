@@ -100,12 +100,14 @@
     <pre>prototype/
 ├── index.html          <span class="c">← 应用外壳：交互逻辑与样式</span>
 │                            <span class="c">【开发者维护】教练不用碰</span>
+├── editor.html         <span class="c">← 教练端线路校准工具</span>
+│                            <span class="c">【教练使用】打开就能改，不用装任何东西</span>
 └── data/
     ├── items.js        <span class="c">← 16 项要点库（口径 / 口诀 / 要点 / 扣分点）</span>
     ├── routes.js       <span class="c">← 4 条线路的顺序（只写 id + 来源）</span>
     ├── special.js      <span class="c">← C1/C2 难点专项题库</span>
     └── lights.js       <span class="c">← 12 组夜间灯光题</span>
-                        <span class="c">【教练维护】改内容只动这 4 个文件</span></pre>
+                        <span class="c">【教练维护】改内容最终落到这 4 个文件</span></pre>
 
     <div class="tip">
       <b>关键设计：项目定义只写一份。</b>「掉头」的操作要点写在 <code>items.js</code> 里一次，
@@ -226,9 +228,24 @@
 
   <!-- 4 -->
   <section>
-    <h2><span class="n">04</span>教练怎么改内容（两种难度）</h2>
+    <h2><span class="n">04</span>教练怎么改内容（三种难度）</h2>
 
-    <h3>方式一 · 直接在 GitHub 网页上改 <span class="tag t-b">零安装，推荐先教这个</span></h3>
+    <h3>方式一 · 用可视化编辑页 <span class="tag t-a">最推荐</span></h3>
+    <p>直接打开 <code>你的网址/editor.html</code>，<b>不需要看懂代码，也不需要安装任何东西</b>：</p>
+    <ul>
+      <li>四条线路切换，用 <b>↑ ↓</b> 调整项目先后、<b>✕</b> 删除、从官方 16 项池点选添加</li>
+      <li>给重复出现的项目填「<b>区分标签</b>」——比如 2 号线有两次右转弯，要分别标「第 1 次」「第 2 次」</li>
+      <li>逐项修改「<b>来源</b>」标记：<b>教练亲自确认过的项，请从「待校准」升级为「图上标注」或「实测已核」</b></li>
+      <li>顶部<b>实时校验</b>：项目数对不对（C1 应为 16）、有没有重名的项</li>
+    </ul>
+    <p>改完点右上角 <b>导出 routes.js</b>，把下载的文件覆盖到 <code>prototype/data/routes.js</code> 即可。</p>
+
+    <div class="tip">
+      <b>为什么把它放在最前面：</b>教练不用懂 JS 语法、不用担心引号写错、也不用记「哪些 id 存在」——
+      编辑页只允许他挑已定义的项目。<b>能犯的错被工具限制住了，协作才真的跑得起来。</b>
+    </div>
+
+    <h3>方式二 · 直接在 GitHub 网页上改 <span class="tag t-b">零安装</span></h3>
     <ol>
       <li>打开仓库里 <code>prototype/data/routes.js</code></li>
       <li>点右上角铅笔图标进入编辑</li>
@@ -252,7 +269,7 @@
       ③ <b>每次只改一条线路、改完立刻提交</b>——这样出问题一眼就能看出是哪次改动导致的，回滚也简单。
     </div>
 
-    <h3>方式二 · 本地改完再传 <span class="tag t-c">熟手用</span></h3>
+    <h3>方式三 · 本地改完再传 <span class="tag t-c">熟手用</span></h3>
     <p>用任何文本编辑器（VS Code、Sublime）打开文件改，改完直接拖到 Cloudflare 后台覆盖，或者 <code>git commit</code> 后推送。适合改动量大的时候。</p>
 
     <h4>改完一定要自检</h4>
