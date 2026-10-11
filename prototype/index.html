@@ -204,6 +204,19 @@
   .cue .who{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);font-weight:700}
   .cue .say{font-size:17px;font-weight:600;line-height:1.5;margin-top:9px}
   .ask{font-size:13.5px;color:var(--dim);margin-bottom:12px}
+  /* 整场模拟 */
+  .examcard{display:flex;align-items:center;gap:13px;margin-top:9px;padding:16px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(255,180,84,.1),transparent 70%),var(--panel);
+    border:1px solid rgba(255,180,84,.32);cursor:pointer}
+  .examcard:active{transform:scale(.985)}
+  .exbar{display:flex;gap:6px;margin-bottom:16px}
+  .exs{flex:1;text-align:center;font-size:10.5px;padding:7px 4px;border-radius:9px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--dim-2)}
+  .exs b{display:block;font-size:11.5px;font-weight:700;margin-bottom:2px;opacity:.55}
+  .exs.on{border-color:var(--accent);color:var(--accent);background:rgba(61,220,151,.08)}
+  .exs.on b{opacity:1}
+  .exs.done{border-color:rgba(61,220,151,.3);color:var(--accent)}
+  .exs.done b{opacity:.85}
   .segcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
   .segitem{font-size:14px;font-weight:500;padding:9px 0}
   .segarr{color:var(--dim-2);font-size:11px;line-height:1}
@@ -275,7 +288,8 @@ const LIGHTS  = window.KC3_LIGHTS;
 const OPS     = window.KC3_LIGHT_OPS;
 
 let S = { tab:'train', screen:'home', model:'c1', r:0, open:null, seen:false,
-          Q:null, L:null, sp:0, sq:null, mix:null, sc:null, mistakes:[], stats:{}, total:0 };
+          Q:null, L:null, sp:0, sq:null, mix:null, sc:null, exam:null,
+          mistakes:[], stats:{}, total:0 };
 
 /* 本地持久化：SPA 无需后端即可保留进度 */
 const LS='kc3.v1';
@@ -325,7 +339,7 @@ function routeItems(r){
 
 /* ============================================================ 渲染 */
 function render(){
-  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ,mix:vMix,scenario:vScenario};
+  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ,mix:vMix,scenario:vScenario,exam:vExam};
   $('app').innerHTML=(M[S.screen]||vHome)();
   $('app').scrollTop=0;
   tabs(); bind(); save();
@@ -370,6 +384,15 @@ function vHome(){
       <div class="mcard hot" data-go="mix"><div class="ico g">⇄</div>
         <div class="ht">跨线路混合 <span class="fbadge">进阶</span></div>
         <div class="hp">猜这段属于哪条线</div></div>
+    </div>
+
+    <div class="examcard" data-go="exam">
+      <div class="mh-ico">★</div>
+      <div style="flex:1">
+        <div class="mh-t">整场模拟</div>
+        <div class="mh-p">随机抽一条线 · 灯光 → 顺序 → 情境，一次走完给总分</div>
+      </div>
+      <div class="arw">›</div>
     </div>
 
     <div class="sechead">路线顺序训练</div>
@@ -601,24 +624,35 @@ function vMine(){
   </div>`;
 }
 
+/* 开头三项（上车准备·模拟夜间灯光·起步）四条线路完全一样，
+   出题时跳过它们——否则题目毫无区分度。 */
+const COMMON_HEAD = 3;
+
 /* ---------- 情境判断：听到这句播报，下一步该是什么 ---------- */
 /* 干扰项取自「同一条线路的其他项」——逼学员区分相邻路段，而不是靠排除法蒙对 */
 const SC_LEN = 8;
-function buildScenario(){
-  const labels = ROUTES.map(r => routeItems(r).map(x => x.label));
+
+/* 某条线路上的全部情境题（末项没有「下一步」，所以只到倒数第二项） */
+function scForRoute(ri){
+  const a = routeItems(ROUTES[ri]).map(x => x.label);
   const out = [];
-  ROUTES.forEach((r, ri) => {
-    const a = labels[ri];
-    for(let i = 3; i < a.length - 1; i++){      // 末项没有「下一步」
-      const nxt = a[i+1];
-      const pool = [];
-      a.forEach((x,j) => { if(j !== i && x !== nxt && !pool.includes(x)) pool.push(x); });
-      if(pool.length < 3) continue;
-      const opts = sh([nxt, ...sh(pool).slice(0,3)]);
-      out.push({ ri, cue:a[i], opts, ans: opts.indexOf(nxt) });
-    }
-  });
-  return sh(out).slice(0, SC_LEN);
+  for(let i = COMMON_HEAD; i < a.length - 1; i++){
+    const nxt = a[i+1];
+    const pool = [];
+    a.forEach((x,j) => { if(j !== i && x !== nxt && !pool.includes(x)) pool.push(x); });
+    if(pool.length < 3) continue;
+    const opts = sh([nxt, ...sh(pool).slice(0,3)]);
+    out.push({ ri, cue:a[i], opts, ans: opts.indexOf(nxt) });
+  }
+  return out;
+}
+
+/* 按线路分层抽样，避免某条线霸占整轮 */
+function buildScenario(){
+  const PER = Math.ceil(SC_LEN / ROUTES.length);
+  const picked = [];
+  ROUTES.forEach((r, ri) => picked.push(...sh(scForRoute(ri)).slice(0, PER)));
+  return sh(picked);
 }
 
 function vScenario(){
@@ -674,7 +708,7 @@ function vScenarioResult(){
 }
 
 /* ---------- 跨线路混合：给一段「线路指纹」，猜是哪条线 ---------- */
-const MIX_WIN = 4, MIX_SKIP = 3;   // 片段长度 / 跳过开头的通用项（上车准备·灯光·起步）
+const MIX_WIN = 4;   // 片段长度
 
 /* 只保留「独此一家」的连续片段。同一个片段若在别的线路也按同样顺序出现，
    这题就没有唯一答案——必须剔除，否则是在考用户猜出题人的心思。
@@ -685,7 +719,7 @@ function buildMix(){
   const byRoute = ROUTES.map(() => []);
   ROUTES.forEach((r, ri) => {
     const a = labels[ri];
-    for(let i = MIX_SKIP; i + MIX_WIN <= a.length; i++){
+    for(let i = COMMON_HEAD; i + MIX_WIN <= a.length; i++){
       const seg = a.slice(i, i + MIX_WIN), k = seg.join('|');
       let dup = false;
       for(let oi = 0; oi < labels.length && !dup; oi++){
@@ -768,6 +802,139 @@ function vMixResult(){
   </div>`;
 }
 
+/* ---------- 整场模拟：随机一条线，按真实顺序走一遍 ---------- */
+const EX_STAGES = ['夜间灯光', '路线顺序', '情境判断'];
+const EX_LIGHT = 5, EX_SC = 4;
+const EX_W = [30, 40, 30];          // 三段分值，合计 100
+
+function newExam(){
+  const ri = Math.floor(Math.random() * ROUTES.length);
+  return {
+    ri, phase: 0,
+    light: { set: sh(LIGHTS).slice(0, EX_LIGHT), i:0, ok:0, log:[] },
+    order: null,
+    sc: { list: sh(scForRoute(ri)).slice(0, EX_SC), i:0, ok:0, log:[] }
+  };
+}
+function exNav(title, sub){
+  return `<div class="nav"><div class="back" data-go="home">‹</div>
+    <div><div class="navtitle">${title}</div><div class="navsub">${sub}</div></div></div>`;
+}
+function exBar(E){
+  return `<div class="exbar">${EX_STAGES.map((s,i)=>
+    `<div class="exs ${i<E.phase?'done':i===E.phase?'on':''}"><b>${i+1}</b>${s}</div>`).join('')}</div>`;
+}
+/* 三段得分（导出供测试直接断言） */
+function examScores(E){
+  const lN = E.light.set.length, oQ = E.order;
+  const oN = oQ ? oQ.items.length : 0;
+  const oOk = oQ ? oQ.ans.filter((p,i)=>p===i).length : 0;
+  const sN = E.sc.list.length;
+  return {
+    light: Math.round((lN ? E.light.ok/lN : 0) * EX_W[0]),
+    order: Math.round((oN ? oOk/oN : 0) * EX_W[1]),
+    sc:    Math.round((sN ? E.sc.ok/sN : 0) * EX_W[2]),
+    detail: { lOk:E.light.ok, lN, oOk, oN, sOk:E.sc.ok, sN }
+  };
+}
+
+function vExam(){
+  if(!S.exam) S.exam = newExam();
+  const E = S.exam;
+  if(E.phase >= EX_STAGES.length) return vExamResult();
+  const r = ROUTES[E.ri];
+
+  /* 阶段 1 · 夜间灯光 */
+  if(E.phase === 0){
+    const L = E.light, q = L.set[L.i], p = L.log[L.i];
+    return `<div class="screen">
+      ${exNav('整场模拟 · 灯光', `${r.name} · 第 ${L.i+1}/${L.set.length} 题`)}
+      ${exBar(E)}
+      <div class="voice"><div class="txt">「${q[0]}」</div><div class="hint">语音播报 · 3 秒内操作</div>
+        ${CAN_SPEAK?`<button class="sbtn" data-say-exl="${L.i}">朗读播报</button>`:''}</div>
+      <div class="lpanel">${OPS.map(o=>{
+        let c=''; if(p){ if(o===q[1]) c='ok'; else if(o===p.o) c='bad'; }
+        return `<button class="lbtn ${c}" ${p?'disabled':''} data-exl="${o}">${o}</button>`;}).join('')}</div>
+      ${p?`<div class="expl ${p.o===q[1]?'':'warn'}">${p.o===q[1]?'<b>选对了</b>':'<b>应选 '+q[1]+'</b>'}｜${q[2]}</div>
+        <div class="btm"><button class="btn" data-act="exnext">${L.i+1<L.set.length?'下一题':'进入路线顺序'}</button></div>`:''}
+    </div>`;
+  }
+
+  /* 阶段 2 · 路线顺序（整条） */
+  if(E.phase === 1){
+    const items = routeItems(r);
+    if(!E.order) E.order = { items, pool: sh(items.map((_,i)=>i)), ans:[], judged:false };
+    const q = E.order, done = q.judged;
+    const pool = q.pool.filter(p=>!q.ans.includes(p));
+    const okN = q.ans.filter((p,i)=>p===i).length;
+    const rows = q.ans.length ? q.ans.map((p,i)=>{
+      const ok = done && p===i;
+      return `<div class="arow ${done?(ok?'ok':'bad'):''}" data-exun="${p}">
+        <div class="n">${done?(ok?'✓':'✕'):i+1}</div><div>${q.items[p].label}</div>
+        ${done&&!ok?`<div class="fix">应为 ${q.items[i].label}</div>`:(done?'':'<div class="x">✕</div>')}</div>`;
+    }).join('') : `<div class="empty">按顺序点选上方项目</div>`;
+
+    return `<div class="screen">
+      ${exNav('整场模拟 · 顺序', `${r.name} · 共 ${items.length} 项`)}
+      ${exBar(E)}
+      ${!done?`<div class="poolstick">
+        <div class="prog"><div class="bar"><i style="width:${q.ans.length/q.items.length*100}%"></i></div><span>${q.ans.length}/${q.items.length}</span></div>
+        <div class="lbl" style="margin-bottom:7px">待选 ${pool.length}</div>
+        <div class="pool">${sh(pool).map(p=>`<div class="chip" data-exp="${p}">${q.items[p].label}</div>`).join('')}</div>
+      </div>`:''}
+      <div class="lbl" style="margin-top:${done?'0':'10px'}">${done?'对照':'你的顺序'}</div>
+      <div class="applied">${rows}</div>
+      <div class="btm">${done
+        ? `<button class="btn" data-act="exnext">进入情境判断</button>`
+        : `<button class="btn" ${q.ans.length!==q.items.length?'disabled':''} data-act="exsubmit">${q.ans.length!==q.items.length?`还差 ${q.items.length-q.ans.length} 项`:'提交'}</button>`}</div>
+    </div>`;
+  }
+
+  /* 阶段 3 · 情境判断 */
+  const A = E.sc, q = A.list[A.i], picked = A.log[A.i], done = picked !== undefined;
+  const KEYS = ['A','B','C','D'];
+  return `<div class="screen">
+    ${exNav('整场模拟 · 情境', `${r.name} · 第 ${A.i+1}/${A.list.length} 题`)}
+    ${exBar(E)}
+    <div class="cue"><div class="who">${r.name} · 语音播报</div><div class="say">「${q.cue}」</div>
+      ${CAN_SPEAK?`<button class="sbtn" data-say-exs="${A.i}">朗读播报</button>`:''}</div>
+    <div class="ask">接下来这条线路上会播报什么？</div>
+    ${q.opts.map((o,i)=>{
+      let c=''; if(done){ if(i===q.ans) c='ok'; else if(i===picked) c='bad'; }
+      return `<button class="opt ${c}" ${done?'disabled':''} data-exsc="${i}">
+        <span class="k">${KEYS[i]}</span><span>${o}</span></button>`;}).join('')}
+    ${done?`<div class="expl ${picked===q.ans?'':'warn'}">${picked===q.ans?'<b>答对了</b>':'<b>应该是「'+q.opts[q.ans]+'」</b>'}</div>
+      <div class="btm"><button class="btn" data-act="exnext">${A.i+1<A.list.length?'下一题':'看总成绩'}</button></div>`:''}
+  </div>`;
+}
+
+function vExamResult(){
+  const E = S.exam, r = ROUTES[E.ri], S3 = examScores(E);
+  const total = S3.light + S3.order + S3.sc;
+  const pass = total >= 90;
+  const rows = [['夜间灯光', S3.light, EX_W[0], `${S3.detail.lOk}/${S3.detail.lN} 题`],
+                ['路线顺序', S3.order, EX_W[1], `${S3.detail.oOk}/${S3.detail.oN} 项`],
+                ['情境判断', S3.sc,    EX_W[2], `${S3.detail.sOk}/${S3.detail.sN} 题`]];
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div><div class="navtitle">整场模拟 · 成绩</div></div>
+    <div class="score"><div class="big" style="color:${pass?'var(--accent)':'var(--warn)'}">${total}</div>
+      <div class="lab">${r.name} · ${pass?'90 分以上，按合格线算是过了':'还差一点，看下面哪一段拖后腿'}</div></div>
+    <div class="sechead">分项得分</div>
+    <div class="card">
+      ${rows.map(([n,v,max,d])=>{
+        const pct = max ? Math.round(v/max*100) : 0;
+        return `<div class="mline"><div class="mhead"><span>${n}</span>
+          <span style="color:${pct>=90?'var(--accent)':pct>=60?'var(--warn)':'var(--red)'}">${v}/${max} · ${d}</span></div>
+          <div class="prog" style="margin-bottom:0"><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
+      }).join('')}
+    </div>
+    <div class="note">模拟按真实考试顺序串起来：灯光 → 上路 → 情境。正式考试满分 100、<b>90 分合格</b>。</div>
+    <div class="btm"><div class="btnrow">
+      <button class="btn ghost" data-go="home">返回首页</button>
+      <button class="btn" data-act="exreset">再考一次</button></div></div>
+  </div>`;
+}
+
 /* 顺序题提交后的统计与错题记录（抽成独立函数便于测试） */
 function recordOrderResult(){
   const q=S.Q;
@@ -790,6 +957,7 @@ function bind(){
     if(g==='special') S.sq=null;
     if(g==='mix') S.mix=null;
     if(g==='scenario') S.sc=null;
+    if(g==='exam') S.exam=null;
     S.screen=g; if(g==='home') S.tab='train'; if(g==='scan') S.tab='scan';
     render();
   });
@@ -799,7 +967,7 @@ function bind(){
   });
   document.querySelectorAll('[data-model]').forEach(el=>el.onclick=()=>{
     if(el.dataset.model===S.model) return;
-    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; S.mix=null; S.sc=null; render();
+    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; S.mix=null; S.sc=null; S.exam=null; render();
   });
   document.querySelectorAll('[data-r]').forEach(el=>el.onclick=()=>{
     S.r=+el.dataset.r; S.Q=null; S.open=null; S.screen='order'; render();
@@ -867,6 +1035,34 @@ function bind(){
     S.mistakes=S.mistakes.slice(0,20); render();
   });
 
+  /* 整场模拟 */
+  document.querySelectorAll('[data-exl]').forEach(el=>el.onclick=()=>{
+    const L=S.exam.light; if(L.log[L.i]) return;
+    const o=el.dataset.exl, q=L.set[L.i];
+    L.log[L.i]={o};
+    if(o===q[1]) L.ok++; else S.mistakes.unshift({q:`${q[0]} → ${q[1]}`,from:'整场模拟 · 灯光'});
+    S.mistakes=S.mistakes.slice(0,20); render();
+  });
+  document.querySelectorAll('[data-exp]').forEach(el=>el.onclick=()=>{ S.exam.order.ans.push(+el.dataset.exp); render(); });
+  document.querySelectorAll('[data-exun]').forEach(el=>el.onclick=()=>{
+    const q=S.exam.order; if(q.judged) return;
+    const p=+el.dataset.exun, i=q.ans.indexOf(p); if(i>-1){ q.ans.splice(i,1); render(); }
+  });
+  document.querySelectorAll('[data-exsc]').forEach(el=>el.onclick=()=>{
+    const A=S.exam.sc; if(A.log[A.i]!==undefined) return;
+    const i=+el.dataset.exsc, q=A.list[A.i];
+    A.log[A.i]=i;
+    if(i===q.ans) A.ok++;
+    else S.mistakes.unshift({q:`情境：${ROUTES[q.ri].name}「${q.cue}」之后 → ${q.opts[q.ans]}`,from:'整场模拟 · 情境'});
+    S.mistakes=S.mistakes.slice(0,20); render();
+  });
+  document.querySelectorAll('[data-say-exl]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); if(S.exam) speak(S.exam.light.set[+el.dataset.sayExl][0]);
+  });
+  document.querySelectorAll('[data-say-exs]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); if(S.exam) speak(S.exam.sc.list[+el.dataset.sayExs].cue);
+  });
+
   /* 灯光 */
   document.querySelectorAll('[data-o]').forEach(el=>el.onclick=()=>{
     const L=S.L; if(!L||L.log[L.i]) return;
@@ -893,6 +1089,20 @@ function bind(){
     if(a==='mixreset') S.mix=null;
     if(a==='scnext') S.sc.i++;
     if(a==='screset') S.sc=null;
+    if(a==='exsubmit'){
+      const q=S.exam.order; q.judged=true;
+      q.ans.forEach((p,i)=>{ if(p!==i)
+        S.mistakes.unshift({q:`「${q.items[p].label}」应是第 ${i+1} 步`,
+                            from:'整场模拟 · '+ROUTES[S.exam.ri].name}); });
+      S.mistakes=S.mistakes.slice(0,20);
+    }
+    if(a==='exnext'){
+      const E=S.exam;
+      if(E.phase===0){ E.light.i++; if(E.light.i >= E.light.set.length) E.phase=1; }
+      else if(E.phase===1){ E.phase=2; }
+      else if(E.phase===2){ E.sc.i++; if(E.sc.i >= E.sc.list.length) E.phase=3; }
+    }
+    if(a==='exreset') S.exam=null;
     if(a==='lnext') S.L.i++;
     if(a==='lreset') S.L=null;
     render();
