@@ -181,17 +181,29 @@
     background:var(--panel-2);color:var(--accent);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
   .sbtn:active{transform:scale(.95)}
   .sayb{color:var(--accent-2);cursor:pointer;border-bottom:1px dashed rgba(77,163,255,.5);margin-left:7px;white-space:nowrap}
+  /* 首页练习模式网格 */
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .mcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer}
+  .mcard:active{transform:scale(.98)}
+  .mcard.hot{border-color:rgba(61,220,151,.35);
+    background:linear-gradient(135deg,rgba(61,220,151,.08),transparent 70%),var(--panel)}
+  .mcard .ico{font-size:17px;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .mcard .ht{font-size:13.5px;font-weight:600;margin-top:10px;display:flex;align-items:center;gap:6px}
+  .mcard .hp{font-size:10.5px;color:var(--dim-2);margin-top:3px;line-height:1.5}
+  .ico.b{background:rgba(77,163,255,.13)}
+  .ico.o{background:rgba(255,180,84,.13)}
+  .ico.g{background:rgba(61,220,151,.13);color:var(--accent)}
   /* 跨线路混合 */
-  .mixhero{display:flex;align-items:center;gap:13px;margin-top:9px;padding:15px 16px;border-radius:14px;
-    background:linear-gradient(135deg,rgba(61,220,151,.1),transparent 70%),var(--panel);
-    border:1px solid rgba(61,220,151,.32);cursor:pointer}
-  .mixhero:active{transform:scale(.985)}
   .mh-ico{width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:rgba(61,220,151,.14);
     display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent)}
-  .mh-t{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
-  .mh-p{font-size:10.5px;color:var(--dim-2);margin-top:3px;line-height:1.5}
   .fbadge{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 6px;border-radius:5px;
     background:rgba(61,220,151,.15);color:var(--accent)}
+  /* 情境判断的播报卡 */
+  .cue{background:linear-gradient(135deg,rgba(77,163,255,.12),transparent 70%),var(--panel);
+    border:1px solid rgba(77,163,255,.3);border-radius:14px;padding:18px 16px;margin-bottom:16px}
+  .cue .who{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);font-weight:700}
+  .cue .say{font-size:17px;font-weight:600;line-height:1.5;margin-top:9px}
+  .ask{font-size:13.5px;color:var(--dim);margin-bottom:12px}
   .segcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
   .segitem{font-size:14px;font-weight:500;padding:9px 0}
   .segarr{color:var(--dim-2);font-size:11px;line-height:1}
@@ -263,7 +275,7 @@ const LIGHTS  = window.KC3_LIGHTS;
 const OPS     = window.KC3_LIGHT_OPS;
 
 let S = { tab:'train', screen:'home', model:'c1', r:0, open:null, seen:false,
-          Q:null, L:null, sp:0, sq:null, mix:null, mistakes:[], stats:{}, total:0 };
+          Q:null, L:null, sp:0, sq:null, mix:null, sc:null, mistakes:[], stats:{}, total:0 };
 
 /* 本地持久化：SPA 无需后端即可保留进度 */
 const LS='kc3.v1';
@@ -313,7 +325,7 @@ function routeItems(r){
 
 /* ============================================================ 渲染 */
 function render(){
-  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ,mix:vMix};
+  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ,mix:vMix,scenario:vScenario};
   $('app').innerHTML=(M[S.screen]||vHome)();
   $('app').scrollTop=0;
   tabs(); bind(); save();
@@ -347,20 +359,17 @@ function vHome(){
       <button class="gbtn" data-act="seen">知道了</button>
     </div>`:''}
 
-    <div class="heroes" style="margin-top:16px">
-      <div class="hero" data-go="lights"><div class="ico b">◐</div>
-        <div class="ht">灯光模拟</div><div class="hp">两车型相同 · 抽 5 题</div></div>
-      <div class="hero" data-go="special"><div class="ico o">⚑</div>
-        <div class="ht">难点专项</div><div class="hp">${SPECIAL[S.model].length} 个高频失分点</div></div>
-    </div>
-
-    <div class="mixhero" data-go="mix">
-      <div class="mh-ico">⇄</div>
-      <div style="flex:1">
-        <div class="mh-t">跨线路混合 <span class="fbadge">进阶</span></div>
-        <div class="mh-p">给一段「线路指纹」猜是哪条线 —— 专治「练 A 考 B」</div>
-      </div>
-      <div class="arw">›</div>
+    <div class="sechead" style="margin-top:20px">练习模式</div>
+    <div class="mgrid">
+      <div class="mcard" data-go="lights"><div class="ico b">◐</div>
+        <div class="ht">灯光模拟</div><div class="hp">12 组场景 · 抽 5 题</div></div>
+      <div class="mcard" data-go="scenario"><div class="ico g">▷</div>
+        <div class="ht">情境判断</div><div class="hp">听到播报，接下一步</div></div>
+      <div class="mcard" data-go="special"><div class="ico o">⚑</div>
+        <div class="ht">难点专项</div><div class="hp">${SPECIAL[S.model].length} 个失分点</div></div>
+      <div class="mcard hot" data-go="mix"><div class="ico g">⇄</div>
+        <div class="ht">跨线路混合 <span class="fbadge">进阶</span></div>
+        <div class="hp">猜这段属于哪条线</div></div>
     </div>
 
     <div class="sechead">路线顺序训练</div>
@@ -592,6 +601,78 @@ function vMine(){
   </div>`;
 }
 
+/* ---------- 情境判断：听到这句播报，下一步该是什么 ---------- */
+/* 干扰项取自「同一条线路的其他项」——逼学员区分相邻路段，而不是靠排除法蒙对 */
+const SC_LEN = 8;
+function buildScenario(){
+  const labels = ROUTES.map(r => routeItems(r).map(x => x.label));
+  const out = [];
+  ROUTES.forEach((r, ri) => {
+    const a = labels[ri];
+    for(let i = 3; i < a.length - 1; i++){      // 末项没有「下一步」
+      const nxt = a[i+1];
+      const pool = [];
+      a.forEach((x,j) => { if(j !== i && x !== nxt && !pool.includes(x)) pool.push(x); });
+      if(pool.length < 3) continue;
+      const opts = sh([nxt, ...sh(pool).slice(0,3)]);
+      out.push({ ri, cue:a[i], opts, ans: opts.indexOf(nxt) });
+    }
+  });
+  return sh(out).slice(0, SC_LEN);
+}
+
+function vScenario(){
+  if(!S.sc || S.sc.model !== S.model)
+    S.sc = { model:S.model, list:buildScenario(), i:0, ok:0, log:[] };
+  const A = S.sc;
+  if(!A.list.length) return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div><div class="navtitle">情境判断</div></div>
+    <div class="empty">当前车型下暂时出不了题。</div></div>`;
+  if(A.i >= A.list.length) return vScenarioResult();
+
+  const q = A.list[A.i], picked = A.log[A.i], done = picked !== undefined;
+  const KEYS = ['A','B','C','D'];
+
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div>
+      <div><div class="navtitle">情境判断</div>
+      <div class="navsub">第 ${A.i+1}/${A.list.length} 题 · ${MODEL_NAME[S.model]}</div></div>
+      <div class="spacer"></div><div class="navsub" style="color:var(--accent)">✓ ${A.ok}</div></div>
+
+    <div class="cue">
+      <div class="who">${ROUTES[q.ri].name} · 语音播报</div>
+      <div class="say">「${q.cue}」</div>
+      ${CAN_SPEAK?`<button class="sbtn" data-say-cue="${A.i}">朗读播报</button>`:''}
+    </div>
+
+    <div class="ask">接下来这条线路上会播报什么？</div>
+    ${q.opts.map((o,i)=>{
+      let c=''; if(done){ if(i===q.ans) c='ok'; else if(i===picked) c='bad'; }
+      return `<button class="opt ${c}" ${done?'disabled':''} data-sc="${i}">
+        <span class="k">${KEYS[i]}</span><span>${o}</span></button>`;}).join('')}
+
+    ${done?`<div class="expl ${picked===q.ans?'':'warn'}">${
+      picked===q.ans ? '<b>答对了</b>' : '<b>应该是「'+q.opts[q.ans]+'」</b>'}｜
+      在 ${ROUTES[q.ri].name} 上，「${q.cue}」之后就是「${q.opts[q.ans]}」。</div>
+      <div class="btm"><button class="btn" data-act="scnext">${A.i+1<A.list.length?'下一题':'看成绩'}</button></div>`:''}
+  </div>`;
+}
+
+function vScenarioResult(){
+  const A = S.sc;
+  const score = Math.round(A.ok / A.list.length * 100);
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div><div class="navtitle">情境判断 · 成绩</div></div>
+    <div class="score"><div class="big">${score}</div>
+      <div class="lab">${A.ok===A.list.length?'听到播报就知道下一步，流程已经进脑子了':'接不上的那几处，就是流程里的断点'}</div></div>
+    <div class="stat">
+      <div class="s"><b style="color:var(--accent)">${A.ok}</b><span>答对</span></div>
+      <div class="s"><b style="color:var(--red)">${A.list.length-A.ok}</b><span>答错</span></div>
+    </div>
+    <div class="btm"><button class="btn ghost" data-act="screset">再来一轮</button></div>
+  </div>`;
+}
+
 /* ---------- 跨线路混合：给一段「线路指纹」，猜是哪条线 ---------- */
 const MIX_WIN = 4, MIX_SKIP = 3;   // 片段长度 / 跳过开头的通用项（上车准备·灯光·起步）
 
@@ -708,6 +789,7 @@ function bind(){
     if(g==='lights') S.L=null;
     if(g==='special') S.sq=null;
     if(g==='mix') S.mix=null;
+    if(g==='scenario') S.sc=null;
     S.screen=g; if(g==='home') S.tab='train'; if(g==='scan') S.tab='scan';
     render();
   });
@@ -717,7 +799,7 @@ function bind(){
   });
   document.querySelectorAll('[data-model]').forEach(el=>el.onclick=()=>{
     if(el.dataset.model===S.model) return;
-    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; S.mix=null; render();
+    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; S.mix=null; S.sc=null; render();
   });
   document.querySelectorAll('[data-r]').forEach(el=>el.onclick=()=>{
     S.r=+el.dataset.r; S.Q=null; S.open=null; S.screen='order'; render();
@@ -760,6 +842,20 @@ function bind(){
     S.mistakes=S.mistakes.slice(0,20); render();
   });
 
+  /* 情境判断 */
+  document.querySelectorAll('[data-sc]').forEach(el=>el.onclick=()=>{
+    const A=S.sc; if(!A || A.log[A.i]!==undefined) return;
+    const i=+el.dataset.sc, q=A.list[A.i];
+    A.log[A.i]=i;
+    if(i===q.ans) A.ok++;
+    else S.mistakes.unshift({q:`情境：${ROUTES[q.ri].name}「${q.cue}」之后 → ${q.opts[q.ans]}`,
+                             from:MODEL_NAME[S.model]+' · 情境判断'});
+    S.mistakes=S.mistakes.slice(0,20); render();
+  });
+  document.querySelectorAll('[data-say-cue]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); if(S.sc) speak(S.sc.list[+el.dataset.sayCue].cue);
+  });
+
   /* 跨线路混合 */
   document.querySelectorAll('[data-mix]').forEach(el=>el.onclick=()=>{
     const X=S.mix; if(!X || X.log[X.i]!==undefined) return;
@@ -795,6 +891,8 @@ function bind(){
     if(a==='sredo') S.sq=null;
     if(a==='mixnext') S.mix.i++;
     if(a==='mixreset') S.mix=null;
+    if(a==='scnext') S.sc.i++;
+    if(a==='screset') S.sc=null;
     if(a==='lnext') S.L.i++;
     if(a==='lreset') S.L=null;
     render();
