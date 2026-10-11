@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="科三路线通">
   <rect width="512" height="512" rx="110" fill="#0e1014"/>
-  <path d="M150 404 L150 356 A106 106 0 0 1 362 356 L362 404"
-        fill="none" stroke="#3ddc97" stroke-width="56" stroke-linecap="round"/>
-  <polygon points="118,404 182,404 150,456" fill="#3ddc97"/>
+  <path d="M146 331 L146 261 A110 110 0 0 1 366 261 L366 331"
+        fill="none" stroke="#3ddc97" stroke-width="48" stroke-linecap="butt"/>
+  <polygon points="114,331 178,331 146,385" fill="#3ddc97"/>
 </svg>

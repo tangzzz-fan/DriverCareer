@@ -181,6 +181,30 @@
     background:var(--panel-2);color:var(--accent);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
   .sbtn:active{transform:scale(.95)}
   .sayb{color:var(--accent-2);cursor:pointer;border-bottom:1px dashed rgba(77,163,255,.5);margin-left:7px;white-space:nowrap}
+  /* 跨线路混合 */
+  .mixhero{display:flex;align-items:center;gap:13px;margin-top:9px;padding:15px 16px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(61,220,151,.1),transparent 70%),var(--panel);
+    border:1px solid rgba(61,220,151,.32);cursor:pointer}
+  .mixhero:active{transform:scale(.985)}
+  .mh-ico{width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:rgba(61,220,151,.14);
+    display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent)}
+  .mh-t{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .mh-p{font-size:10.5px;color:var(--dim-2);margin-top:3px;line-height:1.5}
+  .fbadge{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 6px;border-radius:5px;
+    background:rgba(61,220,151,.15);color:var(--accent)}
+  .segcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
+  .segitem{font-size:14px;font-weight:500;padding:9px 0}
+  .segarr{color:var(--dim-2);font-size:11px;line-height:1}
+  .mixopts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+  .mopt{padding:16px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);
+    color:var(--text);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:.14s}
+  .mopt:active{transform:scale(.97)}
+  .mopt.ok{background:rgba(61,220,151,.13);border-color:rgba(61,220,151,.5);color:var(--accent)}
+  .mopt.bad{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.45);color:var(--red)}
+  .cmp{margin-top:12px;padding:12px 14px;border-radius:11px;background:var(--panel);
+    font-size:11.5px;line-height:1.7;color:var(--dim)}
+  .cmp .ct{color:var(--dim-2);margin-bottom:5px}
+  .cmp .cv{color:var(--warn)}
   .fatal{padding:40px 24px;text-align:center;font-size:13px;color:var(--dim);line-height:1.9}
   .fatal b{color:var(--red);display:block;font-size:15px;margin-bottom:10px}
   @media(max-width:520px){
@@ -239,7 +263,7 @@ const LIGHTS  = window.KC3_LIGHTS;
 const OPS     = window.KC3_LIGHT_OPS;
 
 let S = { tab:'train', screen:'home', model:'c1', r:0, open:null, seen:false,
-          Q:null, L:null, sp:0, sq:null, mistakes:[], stats:{}, total:0 };
+          Q:null, L:null, sp:0, sq:null, mix:null, mistakes:[], stats:{}, total:0 };
 
 /* 本地持久化：SPA 无需后端即可保留进度 */
 const LS='kc3.v1';
@@ -289,7 +313,7 @@ function routeItems(r){
 
 /* ============================================================ 渲染 */
 function render(){
-  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ};
+  const M={home:vHome,order:vOrder,lights:vLights,scan:vScan,mine:vMine,special:vSpecial,sq:vSQ,mix:vMix};
   $('app').innerHTML=(M[S.screen]||vHome)();
   $('app').scrollTop=0;
   tabs(); bind(); save();
@@ -328,6 +352,15 @@ function vHome(){
         <div class="ht">灯光模拟</div><div class="hp">两车型相同 · 抽 5 题</div></div>
       <div class="hero" data-go="special"><div class="ico o">⚑</div>
         <div class="ht">难点专项</div><div class="hp">${SPECIAL[S.model].length} 个高频失分点</div></div>
+    </div>
+
+    <div class="mixhero" data-go="mix">
+      <div class="mh-ico">⇄</div>
+      <div style="flex:1">
+        <div class="mh-t">跨线路混合 <span class="fbadge">进阶</span></div>
+        <div class="mh-p">给一段「线路指纹」猜是哪条线 —— 专治「练 A 考 B」</div>
+      </div>
+      <div class="arw">›</div>
     </div>
 
     <div class="sechead">路线顺序训练</div>
@@ -559,6 +592,101 @@ function vMine(){
   </div>`;
 }
 
+/* ---------- 跨线路混合：给一段「线路指纹」，猜是哪条线 ---------- */
+const MIX_WIN = 4, MIX_SKIP = 3;   // 片段长度 / 跳过开头的通用项（上车准备·灯光·起步）
+
+/* 只保留「独此一家」的连续片段。同一个片段若在别的线路也按同样顺序出现，
+   这题就没有唯一答案——必须剔除，否则是在考用户猜出题人的心思。
+   最后按线路分层抽样（每条最多 PER 题），避免最独特的那条线霸占整轮。 */
+const MIX_PER = 2;
+function buildMix(){
+  const labels = ROUTES.map(r => routeItems(r).map(x => x.label));
+  const byRoute = ROUTES.map(() => []);
+  ROUTES.forEach((r, ri) => {
+    const a = labels[ri];
+    for(let i = MIX_SKIP; i + MIX_WIN <= a.length; i++){
+      const seg = a.slice(i, i + MIX_WIN), k = seg.join('|');
+      let dup = false;
+      for(let oi = 0; oi < labels.length && !dup; oi++){
+        if(oi === ri) continue;
+        const b = labels[oi];
+        for(let j = 0; j + MIX_WIN <= b.length; j++)
+          if(b.slice(j, j + MIX_WIN).join('|') === k){ dup = true; break; }
+      }
+      if(!dup) byRoute[ri].push({ ri, from:i, seg });
+    }
+  });
+  const picked = [];
+  byRoute.forEach(list => picked.push(...sh(list).slice(0, MIX_PER)));
+  return sh(picked);
+}
+function segAt(ri, from){
+  const b = routeItems(ROUTES[ri]).map(x => x.label);
+  return (from + MIX_WIN <= b.length) ? b.slice(from, from + MIX_WIN) : null;
+}
+
+function vMix(){
+  if(!S.mix || S.mix.model !== S.model)
+    S.mix = { model:S.model, list:buildMix(), i:0, ok:0, log:[] };
+  const X = S.mix;
+  if(!X.list.length) return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div><div class="navtitle">跨线路混合</div></div>
+    <div class="empty">当前车型下各线路差异不足以出题。</div></div>`;
+  if(X.i >= X.list.length) return vMixResult();
+
+  const q = X.list[X.i], picked = X.log[X.i], done = picked !== undefined;
+  const r = ROUTES[q.ri];
+  const pos = `第 ${q.from+1}–${q.from+MIX_WIN} 步`;
+
+  let feedback = '';
+  if(done){
+    if(picked === q.ri){
+      feedback = `<div class="expl"><b>答对了</b>｜这段是 ${r.name} 的${pos}。</div>`;
+    } else {
+      const rv = segAt(picked, q.from);
+      feedback = `<div class="expl warn"><b>是 ${r.name}</b>｜这段出现在它的${pos}。` +
+        (rv ? `<div class="cmp"><div class="ct">对照 · ${ROUTES[picked].name} 在同一位置是：</div>
+                 <div class="cv">${rv.join(' → ')}</div></div>` : '') +
+        `</div>`;
+    }
+  }
+
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div>
+      <div><div class="navtitle">跨线路混合</div>
+      <div class="navsub">第 ${X.i+1}/${X.list.length} 题 · ${MODEL_NAME[S.model]}</div></div>
+      <div class="spacer"></div><div class="navsub" style="color:var(--accent)">✓ ${X.ok}</div></div>
+
+    <div class="note" style="margin:0 0 12px">下面这串项目按这个顺序<b style="color:var(--accent)">只可能出现一条线路上</b>。想想是哪条？</div>
+
+    <div class="segcard">
+      ${q.seg.map((s,i)=>`${i?'<div class="segarr">↓</div>':''}<div class="segitem">${s}</div>`).join('')}
+    </div>
+
+    <div class="mixopts">${ROUTES.map((x,i)=>{
+      let c=''; if(done){ if(i===q.ri) c='ok'; else if(i===picked) c='bad'; }
+      return `<button class="mopt ${c}" ${done?'disabled':''} data-mix="${i}">${x.name}</button>`;}).join('')}</div>
+
+    ${feedback}
+    ${done?`<div class="btm"><button class="btn" data-act="mixnext">${X.i+1<X.list.length?'下一题':'看成绩'}</button></div>`:''}
+  </div>`;
+}
+
+function vMixResult(){
+  const X = S.mix;
+  const score = Math.round(X.ok / X.list.length * 100);
+  return `<div class="screen">
+    <div class="nav"><div class="back" data-go="home">‹</div><div class="navtitle">跨线路混合 · 成绩</div></div>
+    <div class="score"><div class="big">${score}</div>
+      <div class="lab">${X.ok===X.list.length?'全部认对，线路已经分得清了':'分不清的地方，正是要练的地方'}</div></div>
+    <div class="stat">
+      <div class="s"><b style="color:var(--accent)">${X.ok}</b><span>答对</span></div>
+      <div class="s"><b style="color:var(--red)">${X.list.length-X.ok}</b><span>答错</span></div>
+    </div>
+    <div class="btm"><button class="btn ghost" data-act="mixreset">再来一轮</button></div>
+  </div>`;
+}
+
 /* 顺序题提交后的统计与错题记录（抽成独立函数便于测试） */
 function recordOrderResult(){
   const q=S.Q;
@@ -579,6 +707,7 @@ function bind(){
     const g=el.dataset.go;
     if(g==='lights') S.L=null;
     if(g==='special') S.sq=null;
+    if(g==='mix') S.mix=null;
     S.screen=g; if(g==='home') S.tab='train'; if(g==='scan') S.tab='scan';
     render();
   });
@@ -588,7 +717,7 @@ function bind(){
   });
   document.querySelectorAll('[data-model]').forEach(el=>el.onclick=()=>{
     if(el.dataset.model===S.model) return;
-    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; render();
+    S.model=el.dataset.model; S.Q=null; S.sq=null; S.open=null; S.mix=null; render();
   });
   document.querySelectorAll('[data-r]').forEach(el=>el.onclick=()=>{
     S.r=+el.dataset.r; S.Q=null; S.open=null; S.screen='order'; render();
@@ -631,6 +760,17 @@ function bind(){
     S.mistakes=S.mistakes.slice(0,20); render();
   });
 
+  /* 跨线路混合 */
+  document.querySelectorAll('[data-mix]').forEach(el=>el.onclick=()=>{
+    const X=S.mix; if(!X || X.log[X.i]!==undefined) return;
+    const i=+el.dataset.mix, q=X.list[X.i];
+    X.log[X.i]=i;
+    if(i===q.ri) X.ok++;
+    else S.mistakes.unshift({q:`线路辨认：「${q.seg[0]}…」属于哪条线 → ${ROUTES[q.ri].name}`,
+                             from:MODEL_NAME[S.model]+' · 跨线路混合'});
+    S.mistakes=S.mistakes.slice(0,20); render();
+  });
+
   /* 灯光 */
   document.querySelectorAll('[data-o]').forEach(el=>el.onclick=()=>{
     const L=S.L; if(!L||L.log[L.i]) return;
@@ -653,6 +793,8 @@ function bind(){
       S.mistakes=S.mistakes.slice(0,20);
     }
     if(a==='sredo') S.sq=null;
+    if(a==='mixnext') S.mix.i++;
+    if(a==='mixreset') S.mix=null;
     if(a==='lnext') S.L.i++;
     if(a==='lreset') S.L=null;
     render();
