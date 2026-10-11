@@ -1,0 +1,16 @@
+{
+  "name": "科三路线通 · 苏州科技城",
+  "short_name": "科三路线通",
+  "description": "苏州科技城科目三路线顺序记忆训练：按线路练顺序，按车型练难点，含夜间灯光模拟。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e1014",
+  "theme_color": "#0e1014",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

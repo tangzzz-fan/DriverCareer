@@ -9,6 +9,10 @@
 <meta name="description" content="苏州科技城科目三路线记忆训练：按线路练顺序，按车型练难点，含夜间灯光模拟。支持 C1 手动挡 / C2 自动挡。">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="科三路线通">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
 <style>
   :root{
     --bg:#0e1014; --panel:#171b22; --panel-2:#1f242d;
@@ -158,6 +162,25 @@
     transition:.22s;pointer-events:none}
   .toast.show{opacity:1;transform:none}
   .note{font-size:10.5px;color:var(--dim-2);line-height:1.65;margin-top:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  /* 首次使用引导 */
+  .guide{background:linear-gradient(135deg,rgba(61,220,151,.1),transparent 70%),var(--panel);
+    border:1px solid rgba(61,220,151,.3);border-radius:14px;padding:16px;margin-top:16px}
+  .guide .gt{font-size:13.5px;font-weight:600;margin-bottom:9px}
+  .guide .gl{font-size:11.5px;color:var(--dim);line-height:1.9}
+  .gbtn{margin-top:13px;width:100%;padding:10px;border-radius:10px;border:1px solid rgba(61,220,151,.4);
+    background:rgba(61,220,151,.1);color:var(--accent);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer}
+  .gbtn:active{transform:scale(.97)}
+  /* 掌握度 */
+  .mline{margin-bottom:15px}
+  .mline:last-of-type{margin-bottom:8px}
+  .mhead{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px}
+  .mhead span:last-child{font-variant-numeric:tabular-nums}
+  /* 朗读 */
+  .sbtn{margin-top:12px;padding:7px 18px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--accent);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+  .sbtn:active{transform:scale(.95)}
+  .sayb{color:var(--accent-2);cursor:pointer;border-bottom:1px dashed rgba(77,163,255,.5);margin-left:7px;white-space:nowrap}
   .fatal{padding:40px 24px;text-align:center;font-size:13px;color:var(--dim);line-height:1.9}
   .fatal b{color:var(--red);display:block;font-size:15px;margin-bottom:10px}
   @media(max-width:520px){
@@ -215,8 +238,8 @@ const SPECIAL = window.KC3_SPECIAL;
 const LIGHTS  = window.KC3_LIGHTS;
 const OPS     = window.KC3_LIGHT_OPS;
 
-let S = { tab:'train', screen:'home', model:'c1', r:0, open:null,
-          Q:null, L:null, sp:0, sq:null, mistakes:[] };
+let S = { tab:'train', screen:'home', model:'c1', r:0, open:null, seen:false,
+          Q:null, L:null, sp:0, sq:null, mistakes:[], stats:{}, total:0 };
 
 /* 本地持久化：SPA 无需后端即可保留进度 */
 const LS='kc3.v1';
@@ -225,10 +248,30 @@ function load(){
     const d=JSON.parse(localStorage.getItem(LS)||'null'); if(!d) return;
     if(d.model==='c1'||d.model==='c2') S.model=d.model;
     if(Array.isArray(d.mistakes)) S.mistakes=d.mistakes.slice(0,20);
+    if(d.stats && typeof d.stats==='object') S.stats=d.stats;
+    if(typeof d.total==='number') S.total=d.total;
+    if(d.seen) S.seen=true;
   }catch(e){}
 }
 function save(){
-  try{ localStorage.setItem(LS, JSON.stringify({model:S.model, mistakes:S.mistakes})); }catch(e){}
+  try{ localStorage.setItem(LS, JSON.stringify({ model:S.model, mistakes:S.mistakes,
+    stats:S.stats, total:S.total, seen:S.seen })); }catch(e){}
+}
+
+/* 掌握度 = 该线路「最好一次」的顺序题正确率；没练过返回 0 */
+function mastery(r){ const st=S.stats[r.id]; return st && st.best ? st.best : 0; }
+function runCount(r){ const st=S.stats[r.id]; return st && st.runs ? st.runs : 0; }
+
+/* 语音朗读：用浏览器内置合成，零依赖。不支持的地方按钮直接不显示 */
+const CAN_SPEAK = typeof window!=='undefined' && 'speechSynthesis' in window && !!window.SpeechSynthesisUtterance;
+function speak(text){
+  if(!CAN_SPEAK || !text) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN'; u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
 }
 
 const $ = id => document.getElementById(id);
@@ -240,7 +283,7 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
 function routeItems(r){
   return r.seq
     .filter(n => !(ITEMS[n.id].c1 && S.model==='c2'))
-    .map((n,pos) => ({ pos, src:n.src||'std', tag:n.tag, item:ITEMS[n.id],
+    .map((n,pos) => ({ pos, id:n.id, src:n.src||'std', tag:n.tag, item:ITEMS[n.id],
                        label: ITEMS[n.id].name + (n.tag ? '（'+n.tag+'）' : '') }));
 }
 
@@ -270,6 +313,16 @@ function vHome(){
     </div>
     <div class="segcap">${S.model==='c1'?'考核 16 项 · 含加减挡位操作':'考核 15 项 · 取消加减挡位操作'}</div>
 
+    ${!S.seen?`<div class="guide">
+      <div class="gt">第一次用？三步上手</div>
+      <div class="gl">
+        1 · 先选车型 —— C1 手动 16 项、C2 自动 15 项，项目数不一样<br>
+        2 · 点一条线路，把打乱的项目按<b>真实行驶顺序</b>依次点出来<br>
+        3 · 提交后逐项对照，排错的会自动进「我的 · 错题本」
+      </div>
+      <button class="gbtn" data-act="seen">知道了</button>
+    </div>`:''}
+
     <div class="heroes" style="margin-top:16px">
       <div class="hero" data-go="lights"><div class="ico b">◐</div>
         <div class="ht">灯光模拟</div><div class="hp">两车型相同 · 抽 5 题</div></div>
@@ -279,10 +332,11 @@ function vHome(){
 
     <div class="sechead">路线顺序训练</div>
     ${ROUTES.map((r,i)=>{
-      const n=routeItemsFor(r).length;
+      const n=routeItemsFor(r).length, v=mastery(r), c=runCount(r);
       return `<div class="row" data-r="${i}">
         <div class="rn">${r.no}</div><div class="rt">${r.name}</div>
-        <div class="rc">${n} 项</div><div class="arw">›</div></div>`;
+        <div class="rc">${n} 项${c?` · <span style="color:${v>=80?'var(--accent)':'var(--warn)'}">${v}%</span>`:''}</div>
+        <div class="arw">›</div></div>`;
     }).join('')}
   </div>`;
 }
@@ -409,7 +463,8 @@ function vLights(){
     <div class="nav"><div class="back" data-go="home">‹</div>
       <div><div class="navtitle">灯光模拟</div><div class="navsub">第 ${L.i+1}/${L.set.length} 题 · 两车型相同</div></div>
       <div class="spacer"></div><div class="navsub" style="color:var(--accent)">✓ ${L.ok}</div></div>
-    <div class="voice"><div class="txt">「${q[0]}」</div><div class="hint">语音播报 · 3 秒内操作</div></div>
+    <div class="voice"><div class="txt">「${q[0]}」</div><div class="hint">语音播报 · 3 秒内操作</div>
+      ${CAN_SPEAK?`<button class="sbtn" data-say-i="${L.i}">朗读播报</button>`:''}</div>
     <div class="lpanel">${OPS.map(o=>{
       let c=''; if(p){ if(o===q[1]) c='ok'; else if(o===p.o) c='bad'; }
       return `<button class="lbtn ${c}" ${p?'disabled':''} data-o="${o}">${o}</button>`;}).join('')}</div>
@@ -454,7 +509,8 @@ function vScan(){
         </div>
         ${S.open===i?`<div class="tipbox">
           <div class="k">${x.item.key}</div>
-          <div class="v">${x.item.voice}</div>
+          <div class="v">${x.item.voice}${CAN_SPEAK && !/^（/.test(x.item.voice)
+            ? `<span class="sayb" data-say-id="${x.id}">朗读</span>` : ''}</div>
           <div class="t">${x.item.tip}</div>
           <div class="l">⚠ ${x.item.lose}</div>
           ${x.item.note?`<div class="nt">＋ ${x.item.note}</div>`:''}
@@ -473,14 +529,48 @@ function vScan(){
 /* ---------- 我的 ---------- */
 function vMine(){
   const m=S.mistakes;
+  const vals=ROUTES.map(mastery).filter(v=>v>0);
+  const avg = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
   return `<div class="screen">
     <div class="nav"><div><h1>我的</h1></div></div>
+    <div class="stat" style="margin-top:4px">
+      <div class="s"><b>${S.total}</b><span>练习次数</span></div>
+      <div class="s"><b style="color:${avg>=80?'var(--accent)':'var(--warn)'}">${avg?avg+'%':'—'}</b><span>平均掌握度</span></div>
+      <div class="s"><b style="color:var(--red)">${m.length}</b><span>错题</span></div>
+    </div>
+
+    <div class="sechead">线路掌握度</div>
+    <div class="card">
+      ${ROUTES.map(r=>{ const v=mastery(r), c=runCount(r); return `
+        <div class="mline">
+          <div class="mhead"><span>${r.name}</span>
+          <span style="color:${v>=80?'var(--accent)':v>0?'var(--warn)':'var(--dim-2)'}">${
+            v ? v+'%' + (c>1?` · 练过 ${c} 次`:'') : '还没练过'}</span></div>
+          <div class="prog" style="margin-bottom:0"><div class="bar"><i style="width:${v}%"></i></div></div>
+        </div>`;}).join('')}
+      <div class="note" style="margin-top:0">掌握度取该线路<b>最好一次</b>的顺序题正确率——奖励进步，不惩罚早期的尝试。</div>
+    </div>
+
     <div class="sechead">错题本 · ${m.length}</div>
     ${m.length? m.slice(0,12).map(x=>`<div class="arow bad" style="margin-bottom:6px">
         <div><div style="font-size:12.5px">${x.q}</div>
         <div style="font-size:10.5px;color:var(--dim-2);margin-top:3px">${x.from}</div></div></div>`).join('')
       : `<div class="empty">还没有错题。排错的项目会自动出现在这里。</div>`}
   </div>`;
+}
+
+/* 顺序题提交后的统计与错题记录（抽成独立函数便于测试） */
+function recordOrderResult(){
+  const q=S.Q;
+  const okN=q.ans.filter((p,i)=>p===i).length;
+  const rate=Math.round(okN/q.items.length*100);
+  const rid=ROUTES[S.r].id;
+  const st=S.stats[rid]||(S.stats[rid]={runs:0,best:0});
+  st.runs++; if(rate>st.best) st.best=rate;     // 掌握度取最好一次
+  S.total++;
+  q.ans.forEach((p,i)=>{ if(p!==i)
+    S.mistakes.unshift({q:`「${q.items[p].label}」应是第 ${i+1} 步`,from:ROUTES[S.r].name+' · 顺序'}); });
+  S.mistakes=S.mistakes.slice(0,20);
 }
 
 /* ============================================================ 绑定 */
@@ -506,6 +596,14 @@ function bind(){
   document.querySelectorAll('[data-sel]').forEach(el=>el.onclick=()=>{ S.r=+el.dataset.sel; S.open=null; render(); });
   document.querySelectorAll('[data-tip]').forEach(el=>el.onclick=()=>{
     const i=+el.dataset.tip; S.open = (S.open===i ? null : i); render();
+  });
+
+  /* 朗读播报（浏览器内置语音，零依赖） */
+  document.querySelectorAll('[data-say-id]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); speak(ITEMS[el.dataset.sayId].voice);
+  });
+  document.querySelectorAll('[data-say-i]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation(); if(S.L) speak(S.L.set[+el.dataset.sayI][0]);
   });
   document.querySelectorAll('[data-sp]').forEach(el=>el.onclick=()=>{
     S.sp=+el.dataset.sp; S.sq=null; S.screen='sq'; render();
@@ -545,12 +643,8 @@ function bind(){
   /* 动作 */
   document.querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>{
     const a=el.dataset.act;
-    if(a==='submit'){
-      const q=S.Q; q.judged=true;
-      q.ans.forEach((p,i)=>{ if(p!==i)
-        S.mistakes.unshift({q:`「${q.items[p].label}」应是第 ${i+1} 步`,from:ROUTES[S.r].name+' · 顺序'}); });
-      S.mistakes=S.mistakes.slice(0,20);
-    }
+    if(a==='submit'){ S.Q.judged=true; recordOrderResult(); }
+    if(a==='seen') S.seen=true;
     if(a==='redo') S.Q=newQ(routeItems(ROUTES[S.r]));
     if(a==='ssubmit'){
       const t=SPECIAL[S.model][S.sp], q=S.sq; q.judged=true;
