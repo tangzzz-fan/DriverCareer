@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>线路数据校准 · 科三路线通</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{
+    --bg:#0e1014; --panel:#171b22; --panel-2:#1f242d; --line:#272e3a;
+    --text:#e9edf3; --dim:#98a3b3; --dim-2:#69737f;
+    --accent:#3ddc97; --accent-2:#4da3ff; --warn:#ffb454; --red:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    padding-bottom:60px}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px}
+  header{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:20px}
+  h1{font-size:21px;letter-spacing:-.01em}
+  .sub{font-size:12.5px;color:var(--dim-2);margin-top:6px;max-width:560px;line-height:1.7}
+  .spacer{flex:1}
+  .btn{padding:11px 18px;border-radius:11px;border:none;font-size:13.5px;font-weight:600;
+    font-family:inherit;cursor:pointer;background:var(--accent);color:#06120c;white-space:nowrap}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.warn{background:transparent;border:1px solid rgba(255,180,84,.45);color:var(--warn)}
+  h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);font-weight:700;margin:26px 0 12px}
+  /* tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:22px}
+  .tab{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
+    color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+  .tab.on{border-color:var(--accent);color:var(--accent);background:rgba(61,220,151,.08)}
+  .tab .n{font-size:10.5px;color:var(--dim-2);margin-left:6px;font-weight:400}
+  .tab.on .n{color:var(--accent)}
+  /* banner */
+  .banner{display:flex;align-items:center;gap:10px;padding:12px 15px;border-radius:11px;font-size:12.5px;margin-top:16px}
+  .banner.ok{background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.3);color:var(--accent)}
+  .banner.bad{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.32);color:var(--red)}
+  /* rows */
+  .rows{display:flex;flex-direction:column;gap:5px}
+  .row{display:grid;grid-template-columns:26px minmax(88px,1fr) 84px 88px auto;gap:7px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .row.dup{border-color:rgba(255,180,84,.45)}
+  .idx{font-size:11px;color:var(--dim-2);text-align:right;font-variant-numeric:tabular-nums}
+  .nm{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nm em{font-style:normal;font-size:9.5px;color:var(--accent-2);border:1px solid rgba(77,163,255,.35);
+    border-radius:4px;padding:0 4px;margin-left:5px}
+  input,select{background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:6px 8px;font-size:11.5px;font-family:inherit;width:100%}
+  input:focus,select:focus{outline:none;border-color:var(--accent-2)}
+  .ops{display:flex;gap:3px}
+  .ops button{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--dim);font-size:12px;font-family:inherit;cursor:pointer;line-height:1}
+  .ops button:hover{color:var(--text);border-color:var(--dim-2)}
+  .ops button.del:hover{color:var(--red);border-color:rgba(255,107,107,.5)}
+  .pool{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{padding:8px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
+    color:var(--text);font-size:12.5px;font-family:inherit;cursor:pointer}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip:disabled{opacity:.35;cursor:not-allowed}
+  .hlp{font-size:12px;color:var(--dim-2);line-height:1.8;margin-top:10px}
+  .hlp code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11.5px;color:#78bcff;
+    background:rgba(77,163,255,.08);padding:1px 5px;border-radius:4px}
+  ol{margin:10px 0 0 20px;font-size:12.5px;color:var(--dim)}
+  ol li{margin-bottom:5px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);background:var(--panel-2);
+    border:1px solid var(--line);color:var(--text);font-size:13px;padding:12px 20px;border-radius:12px;
+    opacity:0;transition:.24s;pointer-events:none;z-index:99}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  @media(max-width:640px){
+    .row{grid-template-columns:22px 1fr auto;grid-template-areas:"i n o" ". t o" ". s o";row-gap:6px}
+    .idx{grid-area:i}.nm{grid-area:n}.tag{grid-area:t}.src{grid-area:s}.ops{grid-area:o}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>线路数据校准</h1>
+      <div class="sub">
+        调整每条线路的项目顺序、区分标签和数据来源。改完点「导出 routes.js」，
+        用下载的文件替换掉 <code>prototype/data/routes.js</code> 即可。
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="reset">恢复初始</button>
+    <button class="btn" id="export">导出 routes.js</button>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="banner"></div>
+
+  <h2>项目顺序</h2>
+  <div class="rows" id="rows"></div>
+
+  <h2>添加项目（官方 16 项）</h2>
+  <div class="pool" id="pool"></div>
+
+  <h2>怎么用</h2>
+  <div class="hlp">
+    <ol>
+      <li>点线路标签切换线路，用 <b>↑ ↓</b> 调整项目先后，<b>✕</b> 删除，从下方 16 项池里点选添加。</li>
+      <li>「区分标签」用于<b>同一条线路上重复出现的项目</b>（比如 2 号线有两次右转弯），
+          填「第 1 次」「第 2 次」把两处区分开。<b>重复项没有标签会导致练习时选项重名。</b></li>
+      <li>「来源」表示这条数据的核实程度：<b>实测已核</b> &gt; <b>图上标注</b> &gt; <b>待校准</b>。
+          教练亲自确认过的项，请从「待校准」改成「图上标注」或「实测已核」。</li>
+      <li>改完点右上角<b>导出 routes.js</b>，把下载的文件覆盖到 <code>prototype/data/routes.js</code>，然后提交。</li>
+    </ol>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="data/items.js"></script>
+<script src="data/routes.js"></script>
+<script>
+const ITEMS = window.KC3_ITEMS;
+const ITEM_KEYS = Object.keys(ITEMS);
+const SRCS = [['std','国家必考'],['pub','实测已核'],['map','图上标注'],['inf','待校准']];
+
+let ORIG = JSON.parse(JSON.stringify(window.KC3_ROUTES));
+let R = JSON.parse(JSON.stringify(window.KC3_ROUTES));
+let cur = 0;
+
+const $ = id => document.getElementById(id);
+
+function label(n){
+  const it = ITEMS[n.id];
+  return it ? it.name + (n.tag ? '（'+n.tag+'）' : '') : '⚠ 未知项目: ' + n.id;
+}
+function dupSet(seq){
+  const c = {}; seq.forEach(n => { const l = label(n); c[l] = (c[l]||0)+1; });
+  return new Set(Object.keys(c).filter(k => c[k] > 1 && !k.includes('（')));
+}
+
+let tT=null;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on');
+  clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('on'), 2600); }
+
+function render(){
+  const r = R[cur];
+
+  /* tabs */
+  $('tabs').innerHTML = R.map((x,i)=>
+    `<button class="tab ${i===cur?'on':''}" data-tab="${i}">${x.name}<span class="n">${x.seq.length} 项</span></button>`
+  ).join('');
+
+  /* banner */
+  const n = r.seq.length, d = dupSet(r.seq);
+  const parts = [];
+  if(n === 16) parts.push(`项目数 16 ✓`);
+  else parts.push(`项目数 ${n}（C1 手动挡应为 16，C2 会自动去掉加减挡位操作）`);
+  if(d.size) parts.push(`有 ${d.size} 个重复项没有区分标签：${[...d].join('、')}`);
+  const ok = (n === 16 && !d.size);
+  $('banner').innerHTML = `<div class="banner ${ok?'ok':'bad'}">${ok?'✓ ':''}${parts.join('　·　')}</div>`;
+
+  /* rows */
+  $('rows').innerHTML = r.seq.map((x,i)=>{
+    const it = ITEMS[x.id] || {};
+    const isDup = d.has(label(x));
+    return `<div class="row ${isDup?'dup':''}">
+      <div class="idx">${i+1}</div>
+      <div class="nm">${it.name || x.id}${it.c1?'<em>C1 专属</em>':''}</div>
+      <input class="tag" data-i="${i}" data-f="tag" value="${x.tag||''}" placeholder="区分标签">
+      <select class="src" data-i="${i}" data-f="src">
+        ${SRCS.map(([v,t])=>`<option value="${v}" ${x.src===v?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <div class="ops">
+        <button data-up="${i}" ${i===0?'disabled':''} title="上移">↑</button>
+        <button data-dn="${i}" ${i===r.seq.length-1?'disabled':''} title="下移">↓</button>
+        <button class="del" data-del="${i}" title="删除">✕</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="banner bad">这条线路还没有任何项目，从下面添加。</div>';
+
+  /* pool */
+  $('pool').innerHTML = ITEM_KEYS.map(k=>{
+    const it = ITEMS[k];
+    return `<button class="chip" data-add="${k}">${it.name}${it.c1?' ·C1':''}</button>`;
+  }).join('');
+
+  bind();
+}
+
+function bind(){
+  document.querySelectorAll('[data-tab]').forEach(el=>el.onclick=()=>{ cur = +el.dataset.tab; render(); });
+
+  document.querySelectorAll('[data-up]').forEach(el=>el.onclick=()=>{
+    const i = +el.dataset.up, s = R[cur].seq;
+    [s[i-1], s[i]] = [s[i], s[i-1]]; render();
+  });
+  document.querySelectorAll('[data-dn]').forEach(el=>el.onclick=()=>{
+    const i = +el.dataset.dn, s = R[cur].seq;
+    [s[i+1], s[i]] = [s[i], s[i+1]]; render();
+  });
+  document.querySelectorAll('[data-del]').forEach(el=>el.onclick=()=>{
+    R[cur].seq.splice(+el.dataset.del, 1); render();
+  });
+  document.querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>{
+    R[cur].seq.push({ id: el.dataset.add, src: 'inf' });
+    render();
+    toast('已添加到末尾，用 ↑ 调整位置');
+  });
+
+  document.querySelectorAll('[data-f]').forEach(el=>{
+    const i = +el.dataset.i, f = el.dataset.f;
+    el.onchange = () => { R[cur].seq[i][f] = el.value.trim() || undefined; render(); };
+  });
+}
+
+/* ---------- 导出 ---------- */
+/* 教练在文本框里可以输入任意字符（引号、反斜杠、换行），
+   不转义的话导出的 routes.js 会直接语法错误——这是最容易踩的坑。 */
+const esc = s => String(s == null ? '' : s)
+  .replace(/\\/g, '\\\\')
+  .replace(/'/g, "\\'")
+  .replace(/[\r\n]+/g, ' ')
+  .trim();
+
+function buildSource(){
+  const body = R.map(r => {
+    const rows = r.seq.map(n => {
+      const pad = (s, w) => s + ' '.repeat(Math.max(0, w - s.length));
+      let line = `      { id: ${pad("'"+esc(n.id)+"',", 14)} src: '${esc(n.src)}'`;
+      if(n.tag) line += `, tag: '${esc(n.tag)}'`;
+      line += ` },`;
+      return line;
+    }).join('\n');
+    return `  {
+    id: '${esc(r.id)}', no: '${esc(r.no)}', name: '${esc(r.name)}',
+    seq: [
+${rows}
+    ]
+  }`;
+  }).join(',\n\n');
+
+  return `/* ============================================================
+   科三路线通 · 线路数据
+   ------------------------------------------------------------
+   每条线路 = 官方 16 项的一个有序排列，用 items.js 里的 id 引用。
+   这里不写任何中文说明文字（那些在 items.js 里），只写「顺序 + 来源 + 区分标签」。
+
+   字段：
+     id   引用 KC3_ITEMS 的键
+     src  数据核实来源  std 国家必考 | pub 实测已核 | map 图上标注 | inf 待教练校准
+     tag  同一项目在同一线路出现多次时的区分标签
+           （是否 C1 专属由 items.js 的 c1 字段决定，不在这里重复写）
+
+   ⚠️ 由 editor.html 导出生成于 ${new Date().toLocaleString('zh-CN')}
+   ============================================================ */
+window.KC3_ROUTES = [
+
+${body}
+
+];
+`;
+}
+
+$('export').onclick = () => {
+  const src = buildSource();
+  const blob = new Blob([src], { type: 'text/javascript;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'routes.js';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('已导出 routes.js —— 覆盖 prototype/data/routes.js 后提交');
+};
+
+$('reset').onclick = () => {
+  if(!confirm('放弃所有修改，恢复成打开页面时的数据？')) return;
+  R = JSON.parse(JSON.stringify(ORIG));
+  render();
+  toast('已恢复初始数据');
+};
+
+render();
+</script>
+</body>
+</html>
