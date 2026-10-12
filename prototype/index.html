@@ -132,6 +132,7 @@
   .ti .nm em{font-style:normal;font-size:9.5px;color:var(--accent-2);border:1px solid rgba(77,163,255,.35);
     border-radius:4px;padding:0 4px;margin-left:6px}
   .ti .chev{color:var(--dim-2);font-size:11px;transition:.2s}
+  .ti .cnt{font-size:10.5px;color:var(--dim-2);flex:0 0 auto;font-variant-numeric:tabular-nums}
   .tli.open .ti .chev{transform:rotate(90deg)}
   .ti .dot{width:5px;height:5px;border-radius:50%;background:var(--dim-2);flex:0 0 5px}
   .ti .dot.pub{background:var(--accent)}
@@ -143,6 +144,27 @@
   .tipbox .t{font-size:12px;color:var(--dim);line-height:1.7}
   .tipbox .l{font-size:11px;color:var(--warn);line-height:1.6;margin-top:9px}
   .tipbox .nt{font-size:11px;color:var(--accent-2);line-height:1.6;margin-top:7px}
+  /* 动作拆解 */
+  .steps{margin-top:13px;padding-top:12px;border-top:1px dashed var(--line)}
+  .steps .sh{font-size:10px;letter-spacing:.12em;color:var(--dim-2);font-weight:700;margin-bottom:9px}
+  .slist{list-style:none;margin:0;padding:0;counter-reset:st}
+  .slist li{position:relative;display:flex;align-items:flex-start;gap:8px;
+    padding:5px 0 5px 25px;font-size:12px;line-height:1.62;color:var(--dim)}
+  .slist li:before{counter-increment:st;content:counter(st);position:absolute;left:0;top:6px;
+    width:16px;height:16px;border-radius:5px;background:var(--panel-2);color:var(--dim-2);
+    font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    font-variant-numeric:tabular-nums}
+  .sk{flex:0 0 auto;font-style:normal;font-size:9.5px;font-weight:700;line-height:16px;
+    height:16px;padding:0 5px;border-radius:5px;margin-top:2px}
+  .sk.see{background:rgba(77,163,255,.16);color:var(--accent-2)}
+  .sk.lamp{background:rgba(255,180,84,.16);color:var(--warn)}
+  .sk.hand{background:rgba(61,220,151,.14);color:var(--accent)}
+  .sk.speed{background:rgba(180,140,255,.16);color:#b48cff}
+  .reftable{margin-top:11px;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .reftable .rr{display:flex;justify-content:space-between;gap:10px;font-size:11px;
+    padding:6px 10px;border-bottom:1px solid var(--line);color:var(--dim-2)}
+  .reftable .rr:last-child{border-bottom:none}
+  .reftable .rr span:first-child{color:var(--text);font-weight:600}
   .legend{display:flex;gap:14px;font-size:10.5px;color:var(--dim-2);margin-top:14px;flex-wrap:wrap}
   .legend i{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:5px;vertical-align:middle}
   .sp{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
@@ -303,7 +325,7 @@ const SPECIAL = window.KC3_SPECIAL;
 const LIGHTS  = window.KC3_LIGHTS;
 const OPS     = window.KC3_LIGHT_OPS;
 
-let S = { tab:'train', screen:'home', model:'c1', r:0, open:null, seen:false,
+let S = { tab:'train', screen:'home', model:'c1', r:0, open:null, seen:false, scan:'route',
           Q:null, L:null, sp:0, sq:null, mix:null, sc:null, exam:null, rv:null,
           mistakes:[], stats:{}, total:0 };
 
@@ -705,40 +727,121 @@ function vLightResult(){
   </div>`;
 }
 
-/* ---------- 速查：可展开看要点 ---------- */
+/* ---------- 速查：可展开看要点与动作拆解 ---------- */
+/* steps 的三种写法都能消费：字符串 / { t, k } / { t, c1, c2 } */
+function stepOf(s){ return typeof s === 'string' ? { t:s } : (s || { t:'' }); }
+function stepList(it){
+  if(S.model === 'c1' && it.stepsC1) return it.stepsC1;
+  if(S.model === 'c2' && it.stepsC2) return it.stepsC2;
+  return it.steps || [];
+}
+function stepText(s){
+  const o = stepOf(s);
+  if(S.model === 'c1' && o.c1) return o.c1;
+  if(S.model === 'c2' && o.c2) return o.c2;
+  return o.t;
+}
+const STEP_K = { '看':'see', '灯':'lamp', '手':'hand', '速':'speed' };
+
+/* 拆解库的分组顺序 = items.js 里的书写顺序，不额外维护配置 */
+function itemGroups(){
+  const out = [];
+  Object.keys(ITEMS).forEach(id => {
+    const g = ITEMS[id].group || '其他';
+    if(!out.includes(g)) out.push(g);
+  });
+  return out;
+}
+/* 当前车型实际考核的项目 id（C2 排除 C1 专属项） */
+function itemIds(){
+  return Object.keys(ITEMS).filter(id => !(ITEMS[id].c1 && S.model === 'c2'));
+}
+
+function stepBox(it){
+  const list = stepList(it);
+  if(!list.length) return '';
+  return `<div class="steps">
+    <div class="sh">动作拆解 · ${list.length} 步</div>
+    <ol class="slist">${list.map(s => {
+      const o = stepOf(s), k = STEP_K[o.k];
+      return `<li>${k ? `<i class="sk ${k}">${o.k}</i>` : ''}<span>${stepText(s)}</span></li>`;
+    }).join('')}</ol>
+    ${it.ref ? `<div class="reftable">${it.ref.map(row =>
+      `<div class="rr"><span>${row[0]}</span><span>${row[1]}</span></div>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+/* 展开后的正文：口诀 → 播报 → 要点 → 动作拆解 → 扣分点 → 补充 */
+function tipBox(it, say){
+  return `<div class="tipbox">
+    <div class="k">${it.key}</div>
+    <div class="v">${it.voice}${say || ''}</div>
+    <div class="t">${it.tip}</div>
+    ${stepBox(it)}
+    <div class="l">⚠ ${it.lose}</div>
+    ${it.note ? `<div class="nt">＋ ${it.note}</div>` : ''}
+  </div>`;
+}
+
 function vScan(){
+  const isRoute = S.scan !== 'action';
   const r=ROUTES[S.r], items=routeItems(r);
-  return `<div class="screen">
-    <div class="nav"><div><h1>项目速查</h1>
-      <div class="lead">${r.name} · ${MODEL_NAME[S.model]} · 共 ${items.length} 项</div></div></div>
-    <div class="pool" style="margin-bottom:6px">
-      ${ROUTES.map((x,i)=>`<div class="chip" style="border-color:${i===S.r?'var(--accent)':'var(--line)'};color:${i===S.r?'var(--accent)':'var(--text)'}" data-sel="${i}">${x.name}</div>`).join('')}
-    </div>
-    <div class="note" style="margin:0 0 12px">点任意一项，展开看<b style="color:var(--accent)">口诀、播报文本、操作要点与扣分点</b>。</div>
-    <div>${items.map((x,i)=>`
-      <div class="tli ${S.open===i?'open':''}">
-        <div class="ti" data-tip="${i}">
-          <div class="num">${String(i+1).padStart(2,'0')}</div>
-          <div class="nm">${x.label}${x.item.c1?'<em>C1 专属</em>':''}</div>
-          <div class="dot ${x.src}"></div>
-          <div class="chev">›</div>
-        </div>
-        ${S.open===i?`<div class="tipbox">
-          <div class="k">${x.item.key}</div>
-          <div class="v">${x.item.voice}${CAN_SPEAK && !/^（/.test(x.item.voice)
-            ? `<span class="sayb" data-say-id="${x.id}">朗读</span>` : ''}</div>
-          <div class="t">${x.item.tip}</div>
-          <div class="l">⚠ ${x.item.lose}</div>
-          ${x.item.note?`<div class="nt">＋ ${x.item.note}</div>`:''}
-        </div>`:''}
-      </div>`).join('')}</div>
-    <div class="legend">
-      <span><i style="background:var(--dim-2)"></i>国家必考</span>
-      <span><i style="background:var(--accent)"></i>实测已核</span>
-      <span><i style="background:var(--accent-2)"></i>图上标注</span>
-      <span><i style="background:var(--warn)"></i>待教练校准</span>
-    </div>
-    <div class="note">${S.model==='c2'?'C2 自动挡无「加减挡位操作」，故为 15 项。':'C1 手动挡含「加减挡位操作」，共 16 项。'}橙点项位置由路线结构推导，请教练确认后再用于正式版本。</div>
+
+  const head = `<div class="nav"><div><h1>项目速查</h1>
+      <div class="lead">${isRoute
+        ? `${r.name} · ${MODEL_NAME[S.model]} · 共 ${items.length} 项`
+        : `${MODEL_NAME[S.model]} · 全部 ${itemIds().length} 项动作拆解`}</div></div></div>
+    <div class="seg" style="margin-bottom:4px">
+      <button class="segb ${isRoute?'on':''}" data-scan="route">按线路</button>
+      <button class="segb ${isRoute?'':'on'}" data-scan="action">按动作</button>
+    </div>`;
+
+  if(isRoute){
+    return `<div class="screen">${head}
+      <div class="pool" style="margin:10px 0 6px">
+        ${ROUTES.map((x,i)=>`<div class="chip" style="border-color:${i===S.r?'var(--accent)':'var(--line)'};color:${i===S.r?'var(--accent)':'var(--text)'}" data-sel="${i}">${x.name}</div>`).join('')}
+      </div>
+      <div class="note" style="margin:0 0 12px">点任意一项，展开看<b style="color:var(--accent)">动作拆解、口诀、播报与扣分点</b>。</div>
+      <div>${items.map((x,i)=>{ const key='r'+i; return `
+        <div class="tli ${S.open===key?'open':''}">
+          <div class="ti" data-tip="${key}">
+            <div class="num">${String(i+1).padStart(2,'0')}</div>
+            <div class="nm">${x.label}${x.item.c1?'<em>C1 专属</em>':''}</div>
+            <div class="dot ${x.src}"></div>
+            <div class="chev">›</div>
+          </div>
+          ${S.open===key?tipBox(x.item, CAN_SPEAK && !/^（/.test(x.item.voice)
+            ? `<span class="sayb" data-say-id="${x.id}">朗读</span>` : ''):''}
+        </div>`;}).join('')}</div>
+      <div class="legend">
+        <span><i style="background:var(--dim-2)"></i>国家必考</span>
+        <span><i style="background:var(--accent)"></i>实测已核</span>
+        <span><i style="background:var(--accent-2)"></i>图上标注</span>
+        <span><i style="background:var(--warn)"></i>待教练校准</span>
+      </div>
+      <div class="note">${S.model==='c2'?'C2 自动挡无「加减挡位操作」，故为 15 项。':'C1 手动挡含「加减挡位操作」，共 16 项。'}橙点项位置由路线结构推导，请教练确认后再用于正式版本。</div>
+    </div>`;
+  }
+
+  /* 按动作：同一个项目在多条线路上都考，这里只讲一遍 */
+  return `<div class="screen">${head}
+    <div class="note" style="margin:0 0 4px">按<b style="color:var(--accent)">考核项目</b>查动作拆解——同一个项目在多条线路上都考，这里只讲一遍。</div>
+    ${itemGroups().map(g=>{
+      const ids = itemIds().filter(id => (ITEMS[id].group || '其他') === g);
+      if(!ids.length) return '';
+      return `<div class="sechead">${g}</div>
+        <div>${ids.map(id=>{
+          const it = ITEMS[id], key = 'a'+id, n = stepList(it).length;
+          return `<div class="tli ${S.open===key?'open':''}">
+            <div class="ti" data-tip="${key}">
+              <div class="nm">${it.name}${it.c1?'<em>C1 专属</em>':''}</div>
+              <div class="cnt">${n} 步</div>
+              <div class="chev">›</div>
+            </div>
+            ${S.open===key?tipBox(it, ''):''}
+          </div>`;
+        }).join('')}</div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -1199,7 +1302,11 @@ function bind(){
   });
   document.querySelectorAll('[data-sel]').forEach(el=>el.onclick=()=>{ S.r=+el.dataset.sel; S.open=null; render(); });
   document.querySelectorAll('[data-tip]').forEach(el=>el.onclick=()=>{
-    const i=+el.dataset.tip; S.open = (S.open===i ? null : i); render();
+    const k=el.dataset.tip; S.open = (S.open===k ? null : k); render();
+  });
+  document.querySelectorAll('[data-scan]').forEach(el=>el.onclick=()=>{
+    if(el.dataset.scan===S.scan) return;
+    S.scan=el.dataset.scan; S.open=null; render();
   });
 
   /* 朗读播报（浏览器内置语音，零依赖） */
